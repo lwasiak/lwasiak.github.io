@@ -90,8 +90,8 @@ tdl.fps.FPSTimer.prototype.update = function(elapsedTime) {
   }
 
   this.instantaneousFPS = Math.floor(1.0 / elapsedTime + 0.5);
-  this.averageFPS = 
-      (1.0 / (this.totalTime_ / tdl.fps.NUM_FRAMES_TO_AVERAGE)).toFixed(2);
+  this.averageFPS = (
+      (1.0 / (this.totalTime_ / tdl.fps.NUM_FRAMES_TO_AVERAGE))).toFixed(2);
 };
 
 
