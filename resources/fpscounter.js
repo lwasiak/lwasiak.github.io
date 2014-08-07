@@ -59,8 +59,7 @@ FPSCounter.prototype.update = function() {
         var startTime = this.startTime_;
         var diff = curTime.getTime() - startTime.getTime();
         this.curFPS_ = (1000.0 * this.numSamples_ / diff);
-        var str = "" + this.curFPS_.toFixed(2) + " frames per second" + this.numSamples_;
-        this.outputElement_.innerHTML = str;
+        var str = "" + this.curFPS_.toFixed(2) + " frames per second";
         this.curSample_ = 0;
         this.startTime_ = curTime;
         return true;
