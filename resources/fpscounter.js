@@ -54,12 +54,16 @@ function FPSCounter(outputElement, opt_numSamples) {
  * @return {boolean} whether this FPS counter actually updated this tick.
  */
 FPSCounter.prototype.update = function() {
+    var str = "" + this.curFPS_.toFixed(2) + " frames per second " + this.curSample_;
+    this.outputElement_.innerHTML = str;
+
     if (++this.curSample_ >= this.numSamples_) {
         var curTime = new Date();
         var startTime = this.startTime_;
         var diff = curTime.getTime() - startTime.getTime();
         this.curFPS_ = (1000.0 * this.numSamples_ / diff);
         var str = "" + this.curFPS_.toFixed(2) + " frames per second";
+        this.outputElement_.innerHTML = str;
         this.curSample_ = 0;
         this.startTime_ = curTime;
         return true;
