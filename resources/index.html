@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<title>Khronos Group</title>
+		<meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+		<meta content="noarchive" name="robots" />
+		<link href="/favicon.ico" rel="shortcut icon" />
+		<link href="/assets/apache/groups-index-style/style.css" media="screen,projection" type="text/css" rel="stylesheet" />
+		<script type="text/javascript" src="/assets/js/jquery/jquery.min.js"></script>
+		<script>
+		$(function(){
+
+			// Set the path heading
+			var location = decodeURI(document.location.pathname);
+
+			var segments = location.split("/");
+			var breadcrumbs = '/';
+			var currentPath = "/";
+			for (var i=0; i<segments.length; i++) {
+				if (segments[i] != '') {
+					currentPath += segments[i] + '/';
+					breadcrumbs += '<a href="' +  currentPath + '">' + segments[i] + '</a>/';
+				}
+			}
+			document.title = document.domain + ':' + location;
+			$('#folder').html(breadcrumbs);
+			
+			// Hide the 'parent' link if we're at the top level
+			if (location == '/files/ip-disclosures/') $('#parent').hide();
+
+			// Set header cell widths
+			$('hr').parent().remove();
+			var headers = $('th');
+			// First column should be the icon
+			$(headers[0]).addClass('icon');
+			// Last two columns should be 'date' and 'size' - no way to be sure really so this is a bit of a hack
+			$(headers[headers.length-1]).addClass('size');
+			$(headers[headers.length-2]).addClass('date');
+			
+			// Setup row hover
+			$('tr').mouseover(function(){this.className="hover"}).mouseout(function(){this.className=""});
+			$('td:has(a)').addClass('name');
+
+			// Refresh button
+			$('a#refresh').click(function(){window.location.reload(true);return false;});
+		});
+		</script>
+	</head>
+	<body>
+    	<div>
+        	<div id="commandbar">
+            	<a href="/" id="home">home</a>
+		<a href="../" id="parent">up</a>
+            	<a href="#" id="refresh">refresh</a>
+        	</div>
+			<div id="files">
+        		<h2>
+            		Location: <span id="folder"></span>
+        		</h2>
+<table><tr><th><img src="/icons/blank.gif" alt="[ICO]" width="16" height="16" /></th><th><a href="?C=N;O=D">Name</a></th><th><a href="?C=M;O=A">Last modified</a></th><th><a href="?C=S;O=A">Size</a></th></tr><tr><th colspan="4"><hr /></th></tr>
+<tr><td valign="top"><a href="/registry/webgl/sdk/demos/google/"><img src="/icons/back.gif" alt="[DIR]" width="16" height="16" /></a></td><td><a href="/registry/webgl/sdk/demos/google/">Parent Directory</a></td><td>&nbsp;</td><td align="right">  - </td></tr>
+<tr><td valign="top"><a href="moz/"><img src="/assets/apache/groups-index-style/icons/folder.gif" alt="[DIR]" width="16" height="16" /></a></td><td><a href="moz/">moz/</a></td><td align="right">05-Aug-2014 10:10  </td><td align="right">  - </td></tr>
+<tr><td valign="top"><a href="o3djs/"><img src="/assets/apache/groups-index-style/icons/folder.gif" alt="[DIR]" width="16" height="16" /></a></td><td><a href="o3djs/">o3djs/</a></td><td align="right">05-Aug-2014 10:10  </td><td align="right">  - </td></tr>
+<tr><td valign="top"><a href="cameracontroller.js"><img src="/icons/unknown.gif" alt="[   ]" width="16" height="16" /></a></td><td><a href="cameracontroller.js">cameracontroller.js</a></td><td align="right">05-Aug-2014 10:10  </td><td align="right">6.7K</td></tr>
+<tr><td valign="top"><a href="context.js"><img src="/icons/unknown.gif" alt="[   ]" width="16" height="16" /></a></td><td><a href="context.js">context.js</a></td><td align="right">05-Aug-2014 10:10  </td><td align="right">2.0K</td></tr>
+<tr><td valign="top"><a href="fpscounter.js"><img src="/icons/unknown.gif" alt="[   ]" width="16" height="16" /></a></td><td><a href="fpscounter.js">fpscounter.js</a></td><td align="right">05-Aug-2014 10:10  </td><td align="right">3.0K</td></tr>
+<tr><td valign="top"><a href="log.js"><img src="/icons/unknown.gif" alt="[   ]" width="16" height="16" /></a></td><td><a href="log.js">log.js</a></td><td align="right">05-Aug-2014 10:10  </td><td align="right">1.6K</td></tr>
+<tr><td valign="top"><a href="OESVertexArrayObject.js"><img src="/icons/unknown.gif" alt="[   ]" width="16" height="16" /></a></td><td><a href="OESVertexArrayObject.js">OESVertexArrayObject.js</a></td><td align="right">05-Aug-2014 10:10  </td><td align="right"> 10K</td></tr>
+<tr><td valign="top"><a href="perf-harness.js"><img src="/icons/unknown.gif" alt="[   ]" width="16" height="16" /></a></td><td><a href="perf-harness.js">perf-harness.js</a></td><td align="right">05-Aug-2014 10:10  </td><td align="right">1.4K</td></tr>
+<tr><td valign="top"><a href="webgl-boilerplate.js"><img src="/icons/unknown.gif" alt="[   ]" width="16" height="16" /></a></td><td><a href="webgl-boilerplate.js">webgl-boilerplate.js</a></td><td align="right">05-Aug-2014 10:10  </td><td align="right">4.3K</td></tr>
+<tr><th colspan="4"><hr /></th></tr>
+</table>
+		</div>
+		<div id="footer">
+			<p><a href="/">Return to the Khronos Group Homepage</a>&nbsp;</p>
+		</div>
+	</div>
+</body>
+</html>
