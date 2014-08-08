@@ -1,1062 +1,578 @@
+<!--
+ * Copyright 2009, Google Inc.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above
+ * copyright notice, this list of conditions and the following disclaimer
+ * in the documentation and/or other materials provided with the
+ * distribution.
+ *     * Neither the name of Google Inc. nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-->
+<!DOCTYPE html>
 <html>
-
 <head>
-<title>Terrain</title>
-<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
-
-<script type="text/javascript" src="assets/gl-matrix-min.js"></script>
-<script type="text/javascript" src="assets/webgl-utils.js"></script>
-
-<script type="text/javascript" src="vertexArrays.js"></script>
-<script type="text/javascript" src="utils.js"></script>
-<script type="text/javascript" src="init.js"></script>
-<script type="text/javascript" src="input.js"></script>
-<script type="text/javascript" src="draw.js"></script>
-
-<script id="vertGrass" type="x-shader/x-vertex">
-    attribute vec3 aVertexPosition;
-    attribute vec3 aVertexNormal;
-    attribute vec2 aTextureCoord;
-
-    uniform mat4 uMVMatrix;
-    uniform mat4 uCamMatrix;
-    uniform mat4 uPMatrix;
-    uniform mat3 uNMatrix;
-    uniform mat4 uShadowCamMatrix;
-
-    varying vec2 vTextureCoord;
-    varying vec3 vTransformedNormal;
-    varying vec4 vLightPosition;
-    varying vec4 vShadowPosition;
-
-    void main(void) {
-        vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
-        gl_Position = uPMatrix * uCamMatrix * vLightPosition;
-
-        vShadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
-        vTextureCoord = aTextureCoord;
-        vTransformedNormal = uNMatrix * aVertexNormal;
-    }
-</script>
-
-<script id="fragGrass" type="x-shader/x-fragment">
-    precision mediump float;
-
-    uniform float uTime;
-    uniform float uBendFactor;
-    const float speed = 3.0;
-
-    uniform sampler2D uSampler;
-    uniform sampler2D uShadowSampler;
-
-    uniform bool uUseShadows;
-    uniform bool uUseSoftShadows;
-    uniform vec2 uShadowMapResolution;
-    uniform bool uUseLighting;
-    uniform vec3 uAmbientColor;
-    uniform vec3 uPointLightLocation;
-    uniform vec3 uPointLightColor;
-
-    varying vec2 vTextureCoord;
-    varying vec3 vTransformedNormal;
-    varying vec4 vLightPosition;
-    varying vec4 vShadowPosition;
-
-    const vec2 v2 = vec2(0.5, 0.5);
-
-    void main(void) {
-        float height = vTextureCoord.y;
-        float offset = pow(height, 2.5);
-        offset *= (sin(uTime * speed) * uBendFactor);
-        vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.x - offset, vTextureCoord.y));
-
-        if (textureColor.a < 0.75) {
-            discard;
-        }
-
-        vec3 lightWeighting;
-        if (!uUseLighting) {
-            lightWeighting = vec3(1.0, 1.0, 1.0);
-        } else {
-            vec3 lightDirection = normalize(uPointLightLocation - vLightPosition.xyz);
-            float directionalLightWeighting = max(dot(normalize(vTransformedNormal), lightDirection), 0.0);
-            lightWeighting = uAmbientColor + uPointLightColor * directionalLightWeighting;
-        }
-
-        float visibility = 1.0;
-        if (uUseShadows) {
-            float shadow = vShadowPosition.z * 0.005;
-            vec4 shadowCoordinateWdivide = vShadowPosition / vShadowPosition.w;
-            vec2 shadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
-
-            if (uUseSoftShadows) {
-                float sum = 0.0;
-                for (float i = -1.0; i < 1.1; i++) {
-                    for (float j = -1.0; j < 1.1; j++) {
-                        float distanceFromLight = texture2D(uShadowSampler, vec2(shadowCoord.x + (j * uShadowMapResolution.x), shadowCoord.y + (i * uShadowMapResolution.y))).z;
-                        float bias = 0.003;
-                        if (shadow > distanceFromLight + bias) {
-                            sum += 1.0;
-                        }
-                    }
-                }
-                visibility = 1.0 - 0.5 * (sum / 9.0);
-            } else {
-                float distanceFromLight = texture2D(uShadowSampler, shadowCoord).z;
-                float bias = 0.003;
-                if (vShadowPosition.w > 0.0 && shadow > distanceFromLight + bias) {
-                    visibility = 0.5;
-                }
-            }
-        }
-
-        gl_FragColor = vec4(textureColor.rgb * lightWeighting * visibility, textureColor.a);
-    }
-</script>
-
-<!-- ____________________________________________________________ -->
-
-<script id="vertGround" type="x-shader/x-vertex">
-    attribute vec3 aVertexPosition;
-    attribute vec3 aVertexNormal;
-    attribute vec2 aTextureCoord;
-
-    uniform mat4 uMVMatrix;
-    uniform mat4 uCamMatrix;
-    uniform mat4 uPMatrix;
-    uniform mat3 uNMatrix;
-    uniform mat4 uShadowCamMatrix;
-
-    varying vec2 vTextureCoord;
-    varying vec3 vTransformedNormal;
-    varying vec4 vLightPosition;
-    varying vec4 vShadowPosition;
-
-    void main(void) {
-        vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
-        gl_Position = uPMatrix * uCamMatrix * vLightPosition;
-
-        vShadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
-        vTextureCoord = aTextureCoord;
-        vTransformedNormal = uNMatrix * aVertexNormal;
-    }
-</script>
-
-<script id="fragGround" type="x-shader/x-fragment">
-    precision mediump float;
-
-    uniform sampler2D uGroundASampler;
-    uniform sampler2D uGroundBSampler;
-    uniform sampler2D uShadowSampler;
-    uniform sampler2D uNormalMapSampler;
-
-    uniform bool uUseShadows;
-    uniform bool uUseSoftShadows;
-    uniform vec2 uShadowMapResolution;
-    uniform bool uUseLighting;
-    uniform vec3 uAmbientColor;
-    uniform vec3 uPointLightLocation;
-    uniform vec3 uPointLightColor;
-
-    varying vec2 vTextureCoord;
-    varying vec3 vTransformedNormal;
-    varying vec4 vLightPosition;
-    varying vec4 vShadowPosition;
-
-    const vec2 v2 = vec2(0.5, 0.5);
-
-    void main(void) {
-        vec3 lightWeighting;
-        if (!uUseLighting) {
-            lightWeighting = vec3(1.0, 1.0, 1.0);
-        } else {
-            vec3 normalMap = texture2D(uNormalMapSampler, vec2(vTextureCoord/10.0)).rgb;
-            vec3 lightDirection = normalize(uPointLightLocation - vLightPosition.xyz);
-            vec3 normal = normalize(normalMap * 2.0 - 1.0);
-
-            vec3 diffuse = uPointLightColor.rgb * max(dot(normal, lightDirection), 0.0);
-            lightWeighting = uAmbientColor + uPointLightColor * diffuse;
-        }
-
-        float visibility = 1.0;
-        if (uUseShadows) {
-            float shadow = vShadowPosition.z * 0.005;
-            vec4 shadowCoordinateWdivide = vShadowPosition / vShadowPosition.w;
-            vec2 shadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
-
-            if (uUseSoftShadows) {
-                float sum = 0.0;
-                for (float i = -1.0; i < 1.1; i++) {
-                    for (float j = -1.0; j < 1.1; j++) {
-                        float distanceFromLight = texture2D(uShadowSampler, vec2(shadowCoord.x + (j * uShadowMapResolution.x), shadowCoord.y + (i * uShadowMapResolution.y))).z;
-                        float bias = 0.005;
-                        if (shadow > distanceFromLight + bias) {
-                            sum += 1.0;
-                        }
-                    }
-                }
-                visibility = 1.0 - 0.5 * (sum / 9.0);
-            } else {
-                float distanceFromLight = texture2D(uShadowSampler, shadowCoord).z;
-                float bias = 0.01;
-                if (vShadowPosition.w > 0.0 && shadow > distanceFromLight + bias) {
-                    visibility = 0.5;
-                }
-            }
-        }
-
-        vec4 colorA = texture2D(uGroundASampler, vTextureCoord);
-        vec2 coord = vTextureCoord / 2.2;
-        vec4 colorB = texture2D(uGroundBSampler, coord);
-
-        vec4 textureColor = colorA * 0.6 + colorB * 0.4;
-        gl_FragColor = vec4(textureColor.rgb * lightWeighting * visibility, textureColor.a);
-    }
-</script>
-
-<!-- ____________________________________________________________ -->
-
-<script id="vertTree" type="x-shader/x-vertex">
-    attribute vec3 aVertexPosition;
-    attribute vec3 aVertexNormal;
-    attribute vec2 aTextureCoord;
-
-    uniform mat4 uMVMatrix;
-    uniform mat4 uCamMatrix;
-    uniform mat4 uPMatrix;
-    uniform mat3 uNMatrix;
-    uniform mat4 uShadowCamMatrix;
-
-    varying vec2 vTextureCoord;
-    varying vec3 vTransformedNormal;
-    varying vec4 vLightPosition;
-    varying vec4 vShadowPosition;
-
-    void main(void) {
-        vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
-        gl_Position = uPMatrix * uCamMatrix * vLightPosition;
-
-        vShadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
-        vTextureCoord = aTextureCoord;
-        vTransformedNormal = uNMatrix * aVertexNormal;
-    }
-</script>
-
-<script id="fragTree" type="x-shader/x-fragment">
-    precision mediump float;
-
-    uniform sampler2D uSampler;
-    uniform sampler2D uShadowSampler;
-
-    uniform bool uUseShadows;
-    uniform bool uUseSoftShadows;
-    uniform vec2 uShadowMapResolution;
-    uniform bool uUseLighting;
-    uniform vec3 uAmbientColor;
-    uniform vec3 uPointLightLocation;
-    uniform vec3 uPointLightColor;
-
-    varying vec2 vTextureCoord;
-    varying vec3 vTransformedNormal;
-    varying vec4 vLightPosition;
-    varying vec4 vShadowPosition;
-
-    const vec2 v2 = vec2(0.5, 0.5);
-
-    void main(void) {
-        vec4 textureColor = texture2D(uSampler, vTextureCoord);
-        if (textureColor.a < 0.75) {
-            discard;
-        }
-
-        vec3 lightWeighting;
-        if (!uUseLighting) {
-            lightWeighting = vec3(1.0, 1.0, 1.0);
-        } else {
-            vec3 lightDirection = normalize(uPointLightLocation - vLightPosition.xyz);
-            float directionalLightWeighting = max(dot(normalize(vTransformedNormal), lightDirection), 0.0);
-            lightWeighting = uAmbientColor + uPointLightColor * directionalLightWeighting;
-        }
-
-        float visibility = 1.0;
-        if (uUseShadows) {
-            float shadow = vShadowPosition.z * 0.005;
-            vec4 shadowCoordinateWdivide = vShadowPosition / vShadowPosition.w;
-            vec2 shadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
-
-            if (uUseSoftShadows) {
-                float sum = 0.0;
-                for (float i = -1.0; i < 1.1; i++) {
-                    for (float j = -1.0; j < 1.1; j++) {
-                        float distanceFromLight = texture2D(uShadowSampler, vec2(shadowCoord.x + (j * uShadowMapResolution.x), shadowCoord.y + (i * uShadowMapResolution.y))).z;
-                        float bias = 0.01;
-                        if (shadow > distanceFromLight + bias) {
-                            sum += 1.0;
-                        }
-                    }
-                }
-                visibility = 1.0 - 0.5 * (sum / 9.0);
-            } else {
-                float distanceFromLight = texture2D(uShadowSampler, shadowCoord).z;
-                float bias = 0.01;
-                if (vShadowPosition.w > 0.0 && shadow > distanceFromLight + bias) {
-                    visibility = 0.5;
-                }
-            }
-        }
-
-        gl_FragColor = vec4(textureColor.rgb * lightWeighting * visibility, textureColor.a);
-    }
-</script>
-
-<!-- ____________________________________________________________ -->
-
-<script id="vertSkybox" type="x-shader/x-vertex">
-    attribute vec3 aVertexPosition;
-
-    uniform mat4 uMVMatrix;
-    uniform mat4 uCamMatrix;
-    uniform mat4 uPMatrix;
-
-    varying vec3 vTextureCoord;
-
-    const vec3 v3 = vec3(0.5, 0.5, 0.5);
-
-    void main(void) {
-        gl_Position = uPMatrix * uCamMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-
-        vTextureCoord = aVertexPosition * v3 + v3;
-    }
-</script>
-
-<script id="fragSkybox" type="x-shader/x-fragment">
-    precision mediump float;
-
-    uniform samplerCube uSampler;
-
-    varying vec3 vTextureCoord;
-
-    void main(void) {
-        gl_FragColor = textureCube(uSampler, vTextureCoord);
-    }
-</script>
-
-<!-- ____________________________________________________________ -->
-
-<script id="vertShadow" type="x-shader/x-vertex">
-    attribute vec3 aVertexPosition;
-    attribute vec2 aTextureCoord;
-
-    uniform mat4 uMVPMatrix;
-
-    varying vec4 vPosition;
-    varying vec2 vTextureCoord;
-
-    void main(void) {
-        vPosition = uMVPMatrix * vec4(aVertexPosition, 1.0);
-        gl_Position = vPosition;
-
-        vTextureCoord = aTextureCoord;
-    }
-</script>
-
-<script id="fragShadow" type="x-shader/x-fragment">
-    precision mediump float;
-
-    uniform float uTime;
-    uniform float uBendFactor;
-    const float speed = 3.0;
-
-    uniform sampler2D uSampler;
-
-    varying vec4 vPosition;
-    varying vec2 vTextureCoord;
-
-    void main(void) {
-        float height = vTextureCoord.y;
-        float offset = pow(height, 2.5);
-        offset *= (sin(uTime * speed) * uBendFactor);
-        vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.x - offset, vTextureCoord.y));
-
-        if (textureColor.a < 0.75) {
-            discard;
-        }
-
-        float color = vPosition.z * 0.005;
-        gl_FragColor = vec4(color, color, color, 1.0);
-    }
-</script>
-
-<!-- ____________________________________________________________ -->
-
-<script id="vertDof" type="x-shader/x-vertex">
-    attribute vec3 aVertexPosition;
-    attribute vec2 aTextureCoord;
-
-    uniform mat4 uMVPMatrix;
-
-    varying vec4 vPosition;
-    varying vec2 vTextureCoord;
-
-    void main(void) {
-        vPosition = uMVPMatrix * vec4(aVertexPosition, 1.0);
-        gl_Position = vPosition;
-
-        vTextureCoord = aTextureCoord;
-    }
-</script>
-
-<script id="fragDof" type="x-shader/x-fragment">
-    precision mediump float;
-
-    uniform float uTime;
-    uniform float uBendFactor;
-    const float speed = 3.0;
-
-    uniform sampler2D uSampler;
-    uniform vec3 uDoFSettings;
-
-    varying vec4 vPosition;
-    varying vec2 vTextureCoord;
-
-    void main(void) {
-        float height = vTextureCoord.y;
-        float offset = pow(height, 2.5);
-        offset *= (sin(uTime * speed) * uBendFactor);
-        vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.x - offset, vTextureCoord.y));
-
-        if (textureColor.a < 0.75) {
-            discard;
-        }
-
-        float blurValue;
-        float near = uDoFSettings.x;
-        float middle = uDoFSettings.y;
-        float far = uDoFSettings.z;
-
-        float distance = vPosition.z * 0.005;
-
-        if (   distance < near
-            || distance > far) {
-            blurValue = 1.0;
-        }
-        if (distance > middle) {
-            blurValue = (distance - middle) / (far - middle);
-        }
-        if (distance < middle) {
-            blurValue = (middle - distance) / (middle - near);
-        }
-        gl_FragColor = vec4(blurValue, blurValue, blurValue, 1.0);
-    }
-</script>
-
-<!-- ____________________________________________________________ -->
-
-<script id="vertBlur" type="x-shader/x-vertex">
-    attribute vec3 aVertexPosition;
-
-    varying vec2 vTextureCoord;
-
-    const vec2 v2 = vec2(0.5, 0.5);
-
-    void main(void) {
-        vTextureCoord = aVertexPosition.xy * v2 + v2;
-        gl_Position = vec4(aVertexPosition.xy, 0.0, 1.0);
-    }
-</script>
-
-<script id="fragHorizontalBlurDOF" type="x-shader/x-fragment">
-    precision mediump float;
-
-    uniform sampler2D uSampler;
-    uniform sampler2D uDepthSampler;
-    uniform bool uUseDOF;
-
-    varying vec2 vTextureCoord;
-
-    void main(void) {
-        float zValue = texture2D(uDepthSampler, vTextureCoord).r;
-        if (uUseDOF == true) {
-            float blurSize = 1.0 / 512.0 * zValue;
-
-            float gb1 = 0.38774;
-            float gb2 = 0.24477;
-            float gb3 = 0.06136;
-
-            vec4 sample = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)) * gb1;
-            sample     += texture2D(uSampler, vec2(vTextureCoord.s + blurSize, vTextureCoord.t)) * gb2;
-            sample     += texture2D(uSampler, vec2(vTextureCoord.s - blurSize, vTextureCoord.t)) * gb2;
-            sample     += texture2D(uSampler, vec2(vTextureCoord.s + blurSize * 2.0, vTextureCoord.t)) * gb3;
-            sample     += texture2D(uSampler, vec2(vTextureCoord.s - blurSize * 2.0, vTextureCoord.t)) * gb3;
-
-            gl_FragColor = sample;
-        } else {
-            gl_FragColor = texture2D(uSampler, vTextureCoord);
-        }
-    }
-</script>
-
-
-<script id="fragVerticalBlurDOF" type="x-shader/x-fragment">
-    precision mediump float;
-
-    uniform sampler2D uSampler;
-    uniform sampler2D uDepthSampler;
-    uniform bool uUseDOF;
-
-    varying vec2 vTextureCoord;
-
-    void main(void) {
-        float zValue = texture2D(uDepthSampler, vTextureCoord).r;
-        if (uUseDOF == true) {
-            float blurSize = 1.0 / 512.0 * zValue;
-            float gb1 = 0.38774;
-            float gb2 = 0.24477;
-            float gb3 = 0.06136;
-
-            vec4 sample = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)) * gb1;
-            sample +=  texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t + blurSize)) * gb2;
-            sample +=  texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t - blurSize)) * gb2;
-            sample +=  texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t + blurSize * 2.0)) * gb3;
-            sample +=  texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t - blurSize * 2.0)) * gb3;
-
-            gl_FragColor = sample;
-        }
-        else {
-            gl_FragColor = texture2D(uSampler, vTextureCoord);
-        }
-    }
-</script>
-
-<script id="fragRadialBlur" type="x-shader/x-fragment">
-    precision mediump float;
-
-    uniform sampler2D uSampler;
-    uniform float uSpeed;
-    uniform bool uUseRadial;
-
-    varying vec2 vTextureCoord;
-
-    const float sampleStrength = 2.2;
-
-    void main(void) {
-        if (uUseRadial == true && uSpeed > 0.1) {
-            vec4 color = texture2D(uSampler, vTextureCoord);
-            vec2 direction = 0.5 - vTextureCoord;
-            float distance = sqrt(direction.x * direction.x + direction.y * direction.y);
-            direction = direction / distance;
-            vec4 sum = color;
-
-            for (float i = 1.0; i < 10.1; i++) {
-                sum += texture2D(uSampler, vTextureCoord + direction * (1.0/512.0 * i) * uSpeed);
-            }
-            sum *= 1.0/11.0;
-
-            float t = distance * sampleStrength;
-            t = clamp(t, 0.0, 1.0);
-
-            gl_FragColor = mix(color, sum, t);
-        } else {
-            gl_FragColor = texture2D(uSampler, vTextureCoord);
-        }
-    }
-</script>
-
-<!-- ____________________________________________________________ -->
-
+<meta charset="utf-8">
+<title>WebGL Dynamic Cubemap</title>
+<link type="text/css" href="jquery-ui-1.8.2.custom/css/ui-lightness/jquery-ui-1.8.2.custom.css" rel="stylesheet" />
+<link type="text/css" href="shared/base.css" rel="stylesheet" />
+<script type="text/javascript" src="jquery-ui-1.8.2.custom/js/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="jquery-ui-1.8.2.custom/js/jquery-ui-1.8.2.custom.min.js"></script>
+<script type="text/javascript" src="khronos/webgl-debug.js"></script>
+<script type="text/javascript" src="tdl/base.js"></script>
+<script type="text/javascript" src="shared/utils.js"></script>
 <script type="text/javascript">
-    var gl;
+tdl.require('tdl.webgl');
+tdl.require('tdl.buffers');
+tdl.require('tdl.fast');
+tdl.require('tdl.framebuffers');
+tdl.require('tdl.fps');
+tdl.require('tdl.fullscreen');
+tdl.require('tdl.log');
+tdl.require('tdl.math');
+tdl.require('tdl.models');
+tdl.require('tdl.particles');
+tdl.require('tdl.primitives');
+tdl.require('tdl.programs');
+tdl.require('tdl.textures');
 
-    var g_FPS = 0;
+// globals
+var gl;                   // the gl context.
+var canvas;               // the canvas
+var math;                 // the math lib.
+var fast;                 // the fast math lib.
+var g_fpsTimer;           // object to measure frames per second;
+var g_logGLCalls = true;  // whether or not to log webgl calls
+var g_debug = false;      // whether or not to debug.
+var g_drawOnce = false;   // draw just one frame.
+var g_setCountElements = [];
+var g_autoSet = true;
+var g_autoSetting = 0;
+var g_cubeMapSize = 256;
+var g_requestId;
 
-    function redraw() {
-        if (depthOfField) {
-            drawDOF();
-        }
+//g_drawOnce = true;
+//g_debug = true;
 
-        if (shadows) {
-            drawShadows();
-        }
+var g_eyeSpeed          = 0.1;
+var g_eyeHeight         = 0.5;
+var g_eyeRadius         = 1.2;
+var g_targetRadius      = 0;
+var g_targetHeight      = 0;
+var g_innerCount        = 6;
+var g_innerSpeed        = [0.2, 0.3, 0.4];
+var g_innerRadius       = 0.1;
+var g_innerMult         = 1;
+var g_fov               = 50;
+var g_dist              = 0.7;
+var g_sphereScale       = 0.1;
 
-        drawScene();
-        drawSceneFramebuffer();
+var g_skyBoxUrls = [
+  'lobby/right.jpg',
+  'lobby/left.jpg',
+  'lobby/up.jpg',
+  'lobby/down.jpg',
+  'lobby/front.jpg',
+  'lobby/back.jpg']
+
+var g_faceViews = [
+  { target: [ 1, 0, 0], up: [0,-1, 0]},
+  { target: [-1, 0, 0], up: [0,-1, 0]},
+  { target: [ 0, 1, 0], up: [0, 0, 1]},
+  { target: [ 0,-1, 0], up: [0, 0,-1]},
+  { target: [ 0, 0, 1], up: [0,-1, 0]},
+  { target: [ 0, 0,-1], up: [0,-1, 0]},
+];
+
+function ValidateNoneOfTheArgsAreUndefined(functionName, args) {
+  for (var ii = 0; ii < args.length; ++ii) {
+    if (args[ii] === undefined) {
+      tdl.error("undefined passed to gl." + functionName + "(" +
+          tdl.webgl.glFunctionArgsToString(functionName, args) + ")");
+    }
+  }
+}
+
+function Log(msg) {
+  if (g_logGLCalls) {
+    tdl.log(msg);
+  }
+}
+
+function LogGLCall(functionName, args) {
+  if (g_logGLCalls) {
+    ValidateNoneOfTheArgsAreUndefined(functionName, args)
+    tdl.log("gl." + functionName + "(" +
+            tdl.webgl.glFunctionArgsToString(functionName, args) + ")");
+  }
+}
+
+/**
+ * Sets up the Skybox
+ */
+function setupSkybox() {
+  var textures = {
+    skybox: tdl.textures.loadTexture(g_skyBoxUrls)};
+  var program = tdl.programs.loadProgramFromScriptTags(
+    'skyboxVertexShader',
+    'skyboxFragmentShader');
+  var arrays = tdl.primitives.createPlane(2, 2, 1, 1);
+  delete arrays['normal'];
+  delete arrays['texCoord'];
+  tdl.primitives.reorient(arrays,
+      [1, 0, 0, 0,
+       0, 0, 1, 0,
+       0,-1, 0, 0,
+       0, 0, 0.999, 1]);
+  return new tdl.models.Model(program, arrays, textures);
+}
+
+/**
+ * Sets up a cubemap plane.
+ */
+function setupCubemapPlane(mainTexture, blurTexture) {
+  var textures = {};
+  var program = tdl.programs.loadProgramFromScriptTags(
+      'baseVertexShader',
+      'baseFragmentShader');
+  var arrays = tdl.primitives.createPlane(2, 2, 1, 1);
+  tdl.primitives.reorient(arrays,
+      [1, 0, 0, 0,
+       0, 0,-1, 0,
+       0, 1, 0, 0,
+       0, 0, 0, 1]);
+  delete arrays.normal;
+  return new tdl.models.Model(program, arrays, textures);
+}
+
+function setupSphere() {
+  var textures = {};
+  var program = tdl.programs.loadProgramFromScriptTags(
+      'baseVertexShader',
+      'baseFragmentShader');
+  var arrays = tdl.primitives.createSphere(0.4, 10, 12);
+
+  return new tdl.models.Model(program, arrays, textures);
+}
+
+function setupEnvSphere(texture) {
+  var textures = {envMap: texture};
+  var program = tdl.programs.loadProgramFromScriptTags(
+      'envVertexShader',
+      'envFragmentShader');
+  var arrays = tdl.primitives.createSphere(0.4, 10, 12);
+  return new tdl.models.Model(program, arrays, textures);
+}
+
+function main() {
+  math = tdl.math;
+  fast = tdl.fast;
+  canvas = document.getElementById("canvas");
+  g_fpsTimer = new tdl.fps.FPSTimer();
+
+  //canvas = WebGLDebugUtils.makeLostContextSimulatingCanvas(canvas);
+  // tell the simulator when to lose context.
+  //canvas.loseContextInNCalls(100000);
+
+  tdl.webgl.registerContextLostHandler(canvas, handleContextLost);
+  tdl.webgl.registerContextRestoredHandler(canvas, handleContextRestored);
+
+  gl = tdl.webgl.setupWebGL(canvas);
+  if (!gl) {
+    return false;
+  }
+  if (g_debug) {
+    gl = tdl.webgl.makeDebugContext(gl, undefined, LogGLCall);
+  }
+
+  initialize();
+}
+
+function handleContextLost() {
+  tdl.log("context lost");
+  tdl.webgl.cancelRequestAnimationFrame(g_requestId);
+}
+
+function handleContextRestored() {
+  tdl.log("context restored");
+  initialize();
+}
+
+function initialize() {
+	g_logGLCalls = true;
+  var cubeFBO = tdl.framebuffers.createCubeFramebuffer(g_cubeMapSize, true);
+  Log("--Setup Sphere---------------------------------------");
+  var sphere = setupSphere();
+  Log("--Setup Env Sphere---------------------------------------");
+  var envSphere = setupEnvSphere(cubeFBO.texture);
+  Log("--Setup Skybox---------------------------------------");
+  var skybox = setupSkybox();
+
+  var then = 0.0;
+  var clock = 0.0;
+  var fpsElem = document.getElementById("fps");
+
+  var projection = new Float32Array(16);
+  var view = new Float32Array(16);
+  var world = new Float32Array(16);
+  var worldInverse = new Float32Array(16);
+  var worldInverseTranspose = new Float32Array(16);
+  var viewProjection = new Float32Array(16);
+  var worldViewProjection = new Float32Array(16);
+  var viewInverse = new Float32Array(16);
+  var viewProjectionInverse = new Float32Array(16);
+  var viewDirectionProjectionInverse = new Float32Array(16);
+  var eyePosition = new Float32Array(3);
+  var target = new Float32Array(3);
+  var up = new Float32Array([0,1,0]);
+  var lightWorldPos = new Float32Array([-4, 1, 0]);
+  var v3t0 = new Float32Array(3);
+  var v3t1 = new Float32Array(3);
+  var v3t2 = new Float32Array(3);
+  var v3t3 = new Float32Array(3);
+  var m4t0 = new Float32Array(16);
+  var m4t1 = new Float32Array(16);
+  var m4t2 = new Float32Array(16);
+  var m4t3 = new Float32Array(16);
+  var zero4 = new Float32Array(4);
+  var one4 = new Float32Array([1,1,1,1]);
+
+  // Sky uniforms.
+  var skyConst = {
+      viewDirectionProjectionInverse: viewDirectionProjectionInverse};
+  var skyPer = {};
+
+  // Sphere uniforms.
+  var sphereConst = {
+    viewInverse: viewInverse,
+    lightWorldPos: lightWorldPos,
+    specular: one4,
+    shininess: 50,
+    specularFactor: 0.2};
+  var spherePer = {
+    lightColor: new Float32Array([0,0,0,1]),
+    world: world,
+    worldViewProjection: worldViewProjection,
+    worldInverse: worldInverse,
+    worldInverseTranspose: worldInverseTranspose};
+
+  // env sphere uniforms.
+  var envSphereConst = {
+    viewInverse: viewInverse};
+  var envSpherePer = {
+    world: world,
+    worldViewProjection: worldViewProjection,
+    worldInverse: worldInverse,
+    worldInverseTranspose: worldInverseTranspose};
+
+  var frameCount = 0;
+  var eyeClock = 0;
+
+  function render() {
+    ++frameCount;
+    var now = (new Date()).getTime() * 0.001;
+    var elapsedTime;
+    if(then == 0.0) {
+      elapsedTime = 0.0;
+    } else {
+      elapsedTime = now - then;
+    }
+    then = now;
+
+    g_fpsTimer.update(elapsedTime);
+    fpsElem.innerHTML = g_fpsTimer.averageFPS + " " + g_fpsTimer.timeTableCursor_;
+
+    clock += elapsedTime;
+    eyeClock += elapsedTime * g_eyeSpeed;
+    eyePosition[0] = Math.sin(eyeClock) * g_eyeRadius;
+    eyePosition[1] = g_eyeHeight;
+    eyePosition[2] = Math.cos(eyeClock) * g_eyeRadius;
+    target[0] = Math.sin(eyeClock + Math.PI) * g_targetRadius;
+    target[1] = g_targetHeight;
+    target[2] = Math.cos(eyeClock + Math.PI) * g_targetRadius;
+
+    gl.colorMask(true, true, true, true);
+    gl.depthMask(true);
+    gl.clearColor(0,0,0,0);
+    gl.clearDepth(1);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+
+    gl.disable(gl.BLEND);
+    gl.depthFunc(gl.LESS);
+    gl.disable(gl.CULL_FACE);
+    gl.enable(gl.DEPTH_TEST);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+    function setupView(width, height, fov, eye, target, up) {
+      fast.matrix4.perspective(
+          projection,
+          fov,
+          width / height,
+          0.1,
+          5000);
+      fast.matrix4.lookAt(
+          view,
+          eye,
+          target,
+          up);
+      fast.matrix4.mul(viewProjection, view, projection);
+      fast.matrix4.inverse(viewInverse, view);
+      fast.matrix4.copy(m4t0, view);
+      fast.matrix4.setTranslation(m4t0, [0, 0, 0]);
+      fast.matrix4.mul(m4t1, m4t0, projection);
+      fast.matrix4.inverse(viewDirectionProjectionInverse, m4t1);
+    }
+//      view: view,
+//      projection: projection,
+//      viewProjection: viewProjection,
+
+//    // Draw Skybox
+//    skybox.drawPrep(skyConst);
+//    skybox.draw(skyPer);
+
+    function drawSpheres(offset, color) {
+      sphere.drawPrep(sphereConst);
+      math.resetPseudoRandom();
+      var lightColor = spherePer.lightColor;
+      for (var ii = 0; ii < g_innerCount; ++ii) {
+        var cc = (ii + 1) * g_innerMult * clock;
+        lightColor[0] = math.pseudoRandom() * (1 - color[0]) + color[0];
+        lightColor[1] = math.pseudoRandom() * (1 - color[1]) + color[1];
+        lightColor[2] = math.pseudoRandom() * (1 - color[2]) + color[2];
+        var scale = math.pseudoRandom() * g_sphereScale + g_sphereScale;
+        fast.matrix4.scaling(m4t0, [scale, scale, scale]);
+        fast.matrix4.translation(
+            m4t1,
+            [offset[0] + Math.sin(cc * g_innerSpeed[0]) * g_innerRadius,
+             offset[1] + Math.sin(cc * g_innerSpeed[1]) * g_innerRadius,
+             offset[2] + Math.sin(cc * g_innerSpeed[2]) * g_innerRadius]);
+        fast.matrix4.mul(world, m4t0, m4t1);
+        fast.matrix4.mul(worldViewProjection, world, viewProjection);
+        fast.matrix4.inverse(worldInverse, world);
+        fast.matrix4.transpose(worldInverseTranspose, worldInverse);
+        sphere.draw(spherePer);
+      }
     }
 
-    var totalTime = 0.0;
-    var direction = 1;
-
-    var changeCamRotateHorizontal = false;
-    var targetCamRotateHorizontal = 0;
-    var changeCamRotateVertical = false;
-    var targetCamRotateVertical = 0;
-    var changeSpeed = false;
-    var targetSpeed = 0;
-    var changeCamHeight = false;
-    var targetCamHeight = 0;
-    var yLevel;
-
-    function animate() {
-        totalTime += 0.01;
-
-        switch(moveMode) {
-            case 1:
-                camXPos += speed * Math.sin(degToRad(camRotateHorizontal));
-                camZPos -= speed * Math.cos(degToRad(camRotateHorizontal));
-                camYPos = getPixelAvg(terrainData, camXPos, -camZPos) / 255.0 * terrainHeight + camHeight;
-                break;
-            case 2:
-                camXPos += speed * Math.sin(degToRad(camRotateHorizontal));
-                camZPos -= speed * Math.cos(degToRad(camRotateHorizontal));
-                camYPos = yLevel + camHeight;
-                break;
-            case 3:
-                camXPos += speed * Math.sin(degToRad(camRotateHorizontal));
-                camZPos -= speed * Math.cos(degToRad(camRotateHorizontal));
-                camYPos -= speed * Math.sin(degToRad(camRotateVertical));
-            default:
-                break;
-        }
-
-        if (camZPos < -58.0 && direction == 2) {
-            test();
-        }
-        if (camXPos > 90.0  && direction == 3) {
-            test();
-        }
-        if (camZPos > -50.0 && direction == 4) {
-            test();
-        }
-        if (camXPos < 44.0  && direction == 5) {
-            test();
-        }
-        if (camZPos < -70.0 && direction == 6) {
-            test();
-        }
-        if (camXPos > 100.0 && direction == 7) {
-            test();
-        }
-        if (camZPos > -16.0 && direction == 8) {
-            test();
-        }
-        if (camZPos < -64.0 && direction == 9) {
-            test();
-        }
-        if (camZPos < -90.0 && direction == 10) {
-            test();
-        }
-        if (camXPos < 5.0   && direction == 11) {
-            test();
-        }
-
-        if (changeCamRotateHorizontal) {
-            if (camRotateHorizontal < targetCamRotateHorizontal) {
-                camRotateHorizontal += 2.0;
-                if (camRotateHorizontal >= targetCamRotateHorizontal) {
-                    changeCamRotateHorizontal = false;
-                }
-            } else {
-                camRotateHorizontal -= 2.0;
-                if (camRotateHorizontal <= targetCamRotateHorizontal) {
-                    changeCamRotateHorizontal = false;
-                }
-            }
-        }
-
-        if (changeCamRotateVertical) {
-            if (camRotateVertical < targetCamRotateVertical) {
-                camRotateVertical += 1.0;
-                if (camRotateVertical >= targetCamRotateVertical) {
-                    changeCamRotateVertical = false;
-                }
-            } else {
-                camRotateVertical -= 1.0;
-                if (camRotateVertical <= targetCamRotateVertical) {
-                    changeCamRotateVertical = false;
-                }
-            }
-        }
-
-        if (changeSpeed) {
-            if (speed < targetSpeed) {
-                speed += 0.03;
-                if (speed >= targetSpeed) {
-                    changeSpeed = false;
-                }
-            } else {
-                speed -= 0.03;
-                if (speed <= targetSpeed) {
-                    changeSpeed = false;
-                }
-            }
-        }
-
-        if (changeCamHeight) {
-            if (camHeight < targetCamHeight) {
-                camHeight += 0.1;
-                if (camHeight >= targetCamHeight) {
-                    changeCamHeight = false;
-                }
-            } else {
-                camHeight -= 0.1;
-                if (camHeight <= targetCamHeight) {
-                    changeCamHeight = false;
-                }
-            }
-        }
+    function drawScene() {
+      // Draw Skybox
+      Log("--Draw Sky---------------------------------------");
+      skybox.drawPrep(skyConst);
+      skybox.draw(skyPer);
+      drawSpheres([-g_dist, 0, 0], [1, 0.5, 0.5]);
+      drawSpheres([ g_dist, 0, 0], [0.5, 1, 0.5]);
+      drawSpheres([ 0, 0,-g_dist], [0.5, 0.5, 1]);
+      drawSpheres([ 0, 0, g_dist], [1, 1, 0.5]);
     }
 
-    var numberOfFrames = 0;
-    var startTime = 0;
-    var endTime = 0;
-    var framerateSum = 0;
-    var minFramerate = 99;
-    var maxFramerate = 0;
-
-    function test() {
-        switch(direction) {
-            case 1:
-                moveMode = 1;
-                direction = 2;
-                startTime = new Date().getTime();
-                numberOfFrames = 0;
-                framerateSum = 0;
-                minFramerate = 99;
-                maxFramerate = 0;
-                totalTime = 0.0;
-                camRotateHorizontal = 10.0;
-                camRotateVertical = 0.0;
-                camXPos = 1.0;
-                camYPos = getPixel(terrainData, camXPos, -camZPos).a / 255.0 * terrainHeight + camHeight;
-                camZPos = -1.0;
-                speed = 1.0;
-                camHeight = 1.5;
-                break;
-
-            case 2:
-                direction = 3;
-                targetCamRotateHorizontal = 120.0;
-                changeCamRotateHorizontal = true;
-                targetCamRotateVertical = -5.0;
-                changeCamRotateVertical = true;
-                targetSpeed = 2.0;
-                changeSpeed = true;
-                targetCamHeight = 3.0;
-                changeCamHeight = true;
-                break;
-
-            case 3:
-                direction = 4;
-                targetCamRotateHorizontal = 180.0;
-                changeCamRotateHorizontal = true;
-                targetCamRotateVertical = 10.0;
-                changeCamRotateVertical = true;
-                targetSpeed = 1.0;
-                changeSpeed = true;
-                targetCamHeight = 1.5;
-                changeCamHeight = true;
-                break;
-
-            case 4:
-                direction = 5;
-                targetCamRotateHorizontal = 270.0;
-                changeCamRotateHorizontal = true;
-                targetCamRotateVertical = 25.0;
-                changeCamRotateVertical = true;
-                targetSpeed = 1.25;
-                changeSpeed = true;
-                targetCamHeight = 2.0;
-                changeCamHeight = true;
-                break;
-
-            case 5:
-                direction = 6;
-                moveMode = 2;
-                camRotateHorizontal = -90.0;
-                targetCamRotateHorizontal = 20.0;
-                changeCamRotateHorizontal = true;
-                targetCamRotateVertical = 30.0;
-                changeCamRotateVertical = true;
-                targetSpeed = 0.5;
-                changeSpeed = true;
-                camHeight = 0.0;
-                yLevel = camYPos;
-                targetCamHeight = 5.0;
-                changeCamHeight = true;
-                break;
-
-            case 6:
-                direction = 7;
-                targetCamRotateHorizontal = 100.0;
-                changeCamRotateHorizontal = true;
-                targetCamRotateVertical = 20.0;
-                changeCamRotateVertical = true;
-                targetSpeed = 0.7;
-                changeSpeed = true;
-                targetCamHeight = 5.5;
-                changeCamHeight = true;
-                break;
-
-            case 7:
-                direction = 8;
-                targetCamRotateHorizontal = 230.0;
-                changeCamRotateHorizontal = true;
-                targetCamRotateVertical = 30.0;
-                changeCamRotateVertical = true;
-                targetSpeed = 0.6;
-                changeSpeed = true;
-                targetCamHeight = 8.0;
-                changeCamHeight = true;
-                break;
-
-            case 8:
-                direction = 9;
-                camRotateHorizontal = -130.0;
-                targetCamRotateHorizontal = 0.0;
-                changeCamRotateHorizontal = true;
-                targetCamRotateVertical = 30.0;
-                changeCamRotateVertical = true;
-                targetSpeed = 0.6;
-                changeSpeed = true;
-                camHeight = 0.0;
-                yLevel = camYPos;
-                targetCamHeight = 9.0;
-                changeCamHeight = true;
-                break;
-
-            case 9:
-                direction = 10;
-                targetCamRotateHorizontal = 370.0;
-                changeCamRotateHorizontal = true;
-                targetCamRotateVertical = 55.0;
-                changeCamRotateVertical = true;
-                targetSpeed = 0.6;
-                changeSpeed = true;
-                targetCamHeight = 15.0;
-                changeCamHeight = true;
-                break;
-
-            case 10:
-                direction = 11;
-                camRotateHorizontal = 10.0;
-                targetCamRotateHorizontal = 260.0;
-                changeCamRotateHorizontal = true;
-                targetCamRotateVertical = 60.0;
-                changeCamRotateVertical = true;
-                targetSpeed = 1.2;
-                changeSpeed = true;
-                targetCamHeight = 20.0;
-                changeCamHeight = true;
-                break;
-
-            case 11:
-                direction = 1;
-                endTime = new Date().getTime();
-                showStats();
-                moveMode = 4;
-                speed = 0.0;
-                changeCamRotateHorizontal = false;
-                changeCamRotateVertical = false;
-                changeSpeed = false;
-                changeCamHeight = false;
-                break;
-
-            default:
-                break;
-        }
+    for (var ff = 0; ff < 6; ++ff) {
+      setupView(g_cubeMapSize, g_cubeMapSize, Math.PI * 0.5,
+                [0, 0, 0], g_faceViews[ff].target, g_faceViews[ff].up);
+      if (ff == 0 && false) {
+        fast.matrix4.getAxis(v3t0, viewInverse, 0); // x
+        fast.matrix4.getAxis(v3t1, viewInverse, 1); // y;
+        fast.matrix4.getAxis(v3t2, viewInverse, 2); // z;
+        fast.mulScalarVector(v3t0, 1, v3t0);
+        fast.mulScalarVector(v3t1, 1, v3t1);
+        fast.mulScalarVector(v3t2, 1, v3t2);
+        fast.addVector(lightWorldPos, eyePosition, v3t0);
+        fast.addVector(lightWorldPos, lightWorldPos, v3t1);
+        fast.addVector(lightWorldPos, lightWorldPos, v3t2);
+      }
+      cubeFBO.bind(ff);
+      gl.colorMask(true, true, true, true);
+      gl.depthMask(true);
+      gl.clearColor(0,0,1,0);
+      gl.clearDepth(1);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+      drawScene();
     }
+    setupView(canvas.clientWidth, canvas.clientHeight, math.degToRad(g_fov),
+              eyePosition, target, up);
 
-    function showStats() {
-        var n = "\n";
-        var t = "  ";
-        alert("Done!"
-                +n+
-                "Framerate:"
-                +n+t+ "Number of frames: " + numberOfFrames
-                +n+t+ "Time: " + (endTime - startTime) / 1000 + "s"
-                +n+t+ "Average: " + (framerateSum / numberOfFrames).toFixed(3)
-                +n+t+ "Min: " + minFramerate.toFixed(3)
-                +n+t+ "Max: " + maxFramerate.toFixed(3)
-                +n+n+
-                "Settings:"
-                +n+t+ "Batch grass: "        + document.getElementById("batchGrass").checked
-                +n+t+ "Grass density: "      + document.getElementById("grassDensity").value
-                +n+t+ "Batch red flowers: "        + document.getElementById("batchFlowerRed").checked
-                +n+t+ "Red flowers density: "      + document.getElementById("flowerRedDensity").value
-                +n+t+ "Batch blue flowers: "        + document.getElementById("batchFlowerBlue").checked
-                +n+t+ "Blue flowers density: "      + document.getElementById("flowerBlueDensity").value
-                +n+t+ "Number of trees: "      + document.getElementById("numberOfTrees").value
-                +n+t+ "Render skybox: "      + document.getElementById("skybox").checked
-                +n+t+ "Use radial blur: "    + document.getElementById("radialBlur").checked
-                +n+t+ "Use depth of field: " + document.getElementById("depthOfField").checked
-                +n+t+t+ "Depth of field settings:"
-                +n+t+t+t+ "Near: "   + document.getElementById("near").value
-                +n+t+t+t+ "Middle: " + document.getElementById("middle").value
-                +n+t+t+t+ "Far: "    + document.getElementById("far").value
-                +n+t+ "Use shadows: " + document.getElementById("shadows").checked
-                +n+t+t+ "Use soft shadows: " + document.getElementById("softShadows").checked
-                +n+t+ "Use lighting: " + document.getElementById("lighting").checked
-                +n+t+t+ "Light settings:"
-                +n+t+t+t+ "Point light position:"
-                +n+t+t+t+t+ "X: " + document.getElementById("lightLocationX").value
-                +n+t+t+t+t+ "Y: " + document.getElementById("lightLocationY").value
-                +n+t+t+t+t+ "Z: " + document.getElementById("lightLocationZ").value
-                +n+t+t+t+ "Point light color:"
-                +n+t+t+t+t+ "R: " + document.getElementById("lightR").value
-                +n+t+t+t+t+ "G: " + document.getElementById("lightG").value
-                +n+t+t+t+t+ "B: " + document.getElementById("lightB").value
-                +n+t+t+t+ "Ambient light color:"
-                +n+t+t+t+t+ "R: " + document.getElementById("ambientR").value
-                +n+t+t+t+t+ "G: " + document.getElementById("ambientG").value
-                +n+t+t+t+t+ "B: " + document.getElementById("ambientB").value
-        );
+    cubeFBO.unbind();
+
+    envSphere.drawPrep(envSphereConst);
+    fast.matrix4.identity(world);
+    fast.matrix4.mul(worldViewProjection, world, viewProjection);
+    fast.matrix4.inverse(worldInverse, world);
+    fast.matrix4.transpose(worldInverseTranspose, worldInverse);
+    envSphere.draw(envSpherePer);
+    drawScene();
+
+    // Set the alpha to 255.
+    gl.colorMask(false, false, false, true);
+    gl.clearColor(0,0,0,1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    // turn off logging after 1 frame.
+    g_logGLCalls = false;
+
+    if (!g_drawOnce) {
+      g_requestId = tdl.webgl.requestAnimationFrame(render, canvas);
     }
+  }
+  render();
+  return true;
+}
 
-    function checkBuffers() {
-        if (   !treeVertexPositionBuffer
-            || !treeIndicesBuffer) {
-            return false;
-        }
-        if (   !terrainVertexPositionBuffer
-            || !terrainNormalsBuffer
-            || !terrainTextureCoordsBuffer
-            || !terrainIndicesBuffer) {
-            return false;
-        }
-        return true;
-    }
+$(function(){
+  setupFullscreen("fullscreen", "body");
+  main();
+});
 
-    var loaded = false;
-    var currentFramerate;
 
-    function tick() {
-        if (!loaded) {
-            loaded = checkBuffers();
-        } else {
-            handleKeys();
-            redraw();
-            animate();
-
-            currentFramerate = g_FPS.snapshot();
-
-            framerateSum += currentFramerate;
-            if (currentFramerate < minFramerate) {
-                minFramerate = currentFramerate;
-            }
-            if (currentFramerate > maxFramerate) {
-                maxFramerate = currentFramerate;
-            }
-            numberOfFrames++;
-        }
-        requestAnimFrame(tick);
-    }
-
-    var screenWidth;
-    var screenHeight;
-
-    function webGLStart() {
-        var canvas          = document.getElementById("can");
-        screenWidth         = window.innerWidth;
-        screenHeight        = window.innerHeight;
-        canvas.style.width  = screenWidth + "px";
-        canvas.style.height = screenHeight + "px";
-
-        gl = initGL(canvas);
-        initTextureFramebuffer();
-        initShaders();
-        initBuffers();
-        initTexture();
-
-        g_FPS = new Framerate('framerate');
-
-        gl.enable(gl.DEPTH_TEST);
-
-        canvas.onmousedown   = handleMouseDown;
-        document.onmouseup   = handleMouseUp;
-        document.onmousemove = handleMouseMove;
-        document.onkeydown   = handleKeyDown;
-        document.onkeyup     = handleKeyUp;
-
-        tick();
-    }
 </script>
 </head>
-
-
-<body onload="webGLStart();">
-    <canvas id="can" style="border: none;" width="1024" height="1024"></canvas>
-
-    <input id="startTest" type="button" value="Start test" onclick=test()></input><br />
-
-    <div id="framerate"></div>
-    <div id="frameTime"></div>
-
-    <input type="checkbox" id="batchGrass" onchange=cbBatchGrass(this) checked /> Batch grass<br />
-    Grass density: <input id="grassDensity" type="range" min=1.0 max=10.0 step=0.1 value=1.0 onchange=moveGrassSlider(this)></input>
-    <br />
-
-    <br />
-    <input type="checkbox" id="batchFlowerRed" onchange=cbBatchFlowerRed(this) checked /> Batch red flowers 
-    <input type="checkbox" id="batchFlowerBlue" onchange=cbBatchFlowerBlue(this) checked /> Batch blue flowers<br />
-    Red flower density: <input id="flowerRedDensity" type="range" min=1.0 max=10.0 step=0.1 value=4.7 onchange=moveFlowerRedSlider(this)></input>
-    <br />
-    Blue flower density: <input id="flowerBlueDensity" type="range" min=1.0 max=10.0 step=0.1 value=5.3 onchange=moveFlowerBlueSlider(this)></input>
-    <br />
-
-    <br />
-    Number of trees: <input type="number" id="numberOfTrees" min=0 max=6 value=6 onchange=numTrees(this) /><br />
-
-    <br />
-    <input type="checkbox" id="skybox" onchange=cbSkybox(this) checked /> Render Skybox<br />
-
-    <br />
-    <input type="checkbox" id="radialBlur" onchange=cbRadialBlur(this) checked /> Use Radial Blur<br />
-
-    <br />
-    <input type="checkbox" id="depthOfField" onchange=cbDepthOfField(this) checked /> Use Depth of Field<br />
-
-
-    <h2>Depth of Field:</h2>
-    <table style="border: 0; padding: 10px;">
-        <tr>
-            <td>Near: <input type="text" id="near" value="0.1" />
-            <td>Middle: <input type="text" id="middle" value="0.3" />
-            <td>Far: <input type="text" id="far" value="0.5" />
-        </tr>
-    </table>
-
-    <br />
-    <input type="checkbox" id="shadows" onchange=cbShadows(this) checked /> Use shadows
-        <input type="checkbox" id="softShadows" onchange=cbSoftShadows(this) checked /> Use soft shadows<br />
-    <br />
-    <input type="checkbox" id="lighting" onchange=cbLighting(this) checked /> Use lighting<br />
-
-
-    <h2>Point light:</h2>
-    <table style="border: 0; padding: 10px;">
-        <tr>
-            <td><b>Location:</b>
-            <td>X: <input type="text" id="lightLocationX" value="10.0" />
-            <td>Y: <input type="text" id="lightLocationY" value="30.0" />
-            <td>Z: <input type="text" id="lightLocationZ" value="20.0" />
-        </tr>
-        <tr>
-            <td><b>Color:</b>
-            <td>R: <input type="text" id="lightR" value="0.8" />
-            <td>G: <input type="text" id="lightG" value="0.8" />
-            <td>B: <input type="text" id="lightB" value="0.8" />
-        </tr>
-    </table>
-
-
-    <h2>Ambient light:</h2>
-    <table style="border: 0; padding: 10px;">
-        <tr>
-            <td><b>Color:</b>
-            <td>R: <input type="text" id="ambientR" value="0.4" />
-            <td>G: <input type="text" id="ambientG" value="0.4" />
-            <td>B: <input type="text" id="ambientB" value="0.4" />
-        </tr>
-    </table>
+<body>
+<div id="info"><a href="http://threedlibrary.googlecode.com" target="_blank">tdl.js</a> - dynamic cubemap</div>
+<div id="fpsContainer">
+  <div class="fpsInner">
+    <div id="fullscreen"></div>
+    <div class="fps">fps: <span id="fps"></span></div>
+  </div>
+</div>
+<div id="viewContainer">
+<canvas id="canvas" width="1024" height="1024" style="width: 100%; height: 100%;"></canvas>
+</div>
 </body>
+<script id="baseVertexShader" type="text/something-not-javascript">
+uniform mat4 worldViewProjection;
+uniform vec3 lightWorldPos;
+uniform mat4 world;
+uniform mat4 viewInverse;
+uniform mat4 worldInverseTranspose;
+attribute vec4 position;
+attribute vec3 normal;
+attribute vec2 texCoord;
+varying vec4 v_position;
+varying vec2 v_texCoord;
+varying vec3 v_normal;
+varying vec3 v_surfaceToLight;
+varying vec3 v_surfaceToView;
+void main() {
+  v_texCoord = texCoord;
+  v_position = (worldViewProjection * position);
+  v_normal = (worldInverseTranspose * vec4(normal, 0)).xyz;
+  v_surfaceToLight = lightWorldPos - (world * position).xyz;
+  v_surfaceToView = (viewInverse[3] - (world * position)).xyz;
+  gl_Position = v_position;
+}
 
+</script>
+<script id="baseFragmentShader" type="text/something-not-javascript">
+#ifdef GL_ES
+precision mediump float;
+#endif
+uniform vec4 lightColor;
+varying vec4 v_position;
+varying vec2 v_texCoord;
+varying vec3 v_normal;
+varying vec3 v_surfaceToLight;
+varying vec3 v_surfaceToView;
+
+uniform vec4 specular;
+uniform float shininess;
+uniform float specularFactor;
+
+vec4 lit(float l ,float h, float m) {
+  return vec4(1.0,
+              max(l, 0.0),
+              (l > 0.0) ? pow(max(0.0, h), m) : 0.0,
+              1.0);
+}
+void main() {
+  vec3 normal = normalize(v_normal);
+  vec3 surfaceToLight = normalize(v_surfaceToLight);
+  vec3 surfaceToView = normalize(v_surfaceToView);
+  vec3 halfVector = normalize(surfaceToLight + surfaceToView);
+  vec4 litR = lit(dot(normal, surfaceToLight),
+                    dot(normal, halfVector), shininess);
+  gl_FragColor = vec4((lightColor * 0.1 + 0.9 *
+  lightColor * (litR.y + specular * litR.z * specularFactor)).rgb,
+      1.0);
+}
+</script>
+<!-- ===[ Env Shader ]============================================== -->
+<script id="envVertexShader" type="text/something-not-javascript">
+uniform mat4 worldViewProjection;
+uniform mat4 world;
+uniform mat4 viewInverse;
+uniform mat4 worldInverseTranspose;
+attribute vec4 position;
+attribute vec3 normal;
+attribute vec2 texCoord;
+varying vec4 v_position;
+varying vec2 v_texCoord;
+varying vec3 v_normal;
+varying vec3 v_surfaceToView;
+void main() {
+  v_texCoord = texCoord;
+  v_position = worldViewProjection * position;
+  v_normal = (worldInverseTranspose * vec4(normal, 0)).xyz;
+  v_surfaceToView = (viewInverse[3] - (world * position)).xyz;
+  gl_Position = v_position;
+}
+
+</script>
+<script id="envFragmentShader" type="text/something-not-javascript">
+#ifdef GL_ES
+precision mediump float;
+#endif
+varying vec4 v_position;
+varying vec2 v_texCoord;
+varying vec3 v_normal;
+varying vec3 v_surfaceToView;
+
+uniform samplerCube envMap;
+
+void main() {
+  vec3 normal = normalize(v_normal);
+  vec3 surfaceToView = normalize(v_surfaceToView);
+  gl_FragColor = textureCube(envMap, -reflect(surfaceToView, normal));
+}
+</script>
+<script id="skyboxVertexShader" type="text/something-not-javascript">
+attribute vec4 position;
+varying vec4 v_position;
+void main() {
+  v_position = position;
+  gl_Position = position;
+}
+</script>
+<script id="skyboxFragmentShader" type="text/something-not-javascript">
+#ifdef GL_ES
+precision mediump float;
+#endif
+uniform samplerCube skybox;
+uniform mat4 viewDirectionProjectionInverse;
+varying vec4 v_position;
+void main() {
+  vec4 t = viewDirectionProjectionInverse * v_position;
+  gl_FragColor = textureCube(
+      skybox,
+      normalize(t.xyz / t.w));
+}
+</script>
 </html>
+
+
