@@ -30,10 +30,7 @@ body {
     uniform mat3 uNMatrix;
     uniform mat4 uShadowCamMatrix;
 
-    uniform float uTime;
-    uniform float uBendFactor;
-    uniform sampler2D uWindXSampler;
-    uniform sampler2D uWindZSampler;
+
 
     varying vec2 vTextureCoord;
     varying vec3 vTransformedNormal;
@@ -41,17 +38,9 @@ body {
     varying vec4 vShadowPosition;
 
     void main(void) {
-        if (aTextureCoord.y > 0.1) {
-            float xBend = (texture2D(uWindXSampler, vec2((aVertexPosition.x + 0.5) / 128.0 + uTime, -(aVertexPosition.z - 0.5) / 128.0)).r) - 0.5;
-            xBend *= uBendFactor;
-            float zBend = (texture2D(uWindZSampler, vec2((aVertexPosition.x + 0.5) / 128.0, -(aVertexPosition.z - 0.5) / 128.0 - uTime)).r) - 0.5;
-            zBend *= uBendFactor;
 
-            vLightPosition = uMVMatrix * vec4(aVertexPosition.x - xBend, aVertexPosition.y, aVertexPosition.z - zBend, 1.0);
-        } else {
-            vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
-        }
 
+        vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
         gl_Position = uPMatrix * uCamMatrix * vLightPosition;
         vShadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
         vTextureCoord = aTextureCoord;
@@ -246,11 +235,7 @@ body {
     uniform mat3 uNMatrix;
     uniform mat4 uShadowCamMatrix;
 
-    uniform float uTime;
-    uniform float uBendFactor;
-    uniform vec2 uTreeCenter;
-    uniform sampler2D uWindXSampler;
-    uniform sampler2D uWindZSampler;
+
 
     varying vec2 vTextureCoord;
     varying vec3 vTransformedNormal;
@@ -258,17 +243,8 @@ body {
     varying vec4 vShadowPosition;
 
     void main(void) {
-        if (aTextureCoord.y > 0.75) {
-            float xBend = (texture2D(uWindXSampler, vec2((uTreeCenter.x + 0.5) / 128.0 + uTime, (uTreeCenter.y - 0.5) / 128.0)).r) - 0.5;
-            xBend *= uBendFactor;
-            float zBend = (texture2D(uWindZSampler, vec2((uTreeCenter.x + 0.5) / 128.0, (uTreeCenter.y - 0.5) / 128.0 - uTime)).r) - 0.5;
-            zBend *= uBendFactor;
 
-            vLightPosition = uMVMatrix * vec4(aVertexPosition.x - xBend, aVertexPosition.y, aVertexPosition.z - zBend, 1.0);
-        } else {
-            vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
-        }
-
+        vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
         gl_Position = uPMatrix * uCamMatrix * vLightPosition;
         vShadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
         vTextureCoord = aTextureCoord;
