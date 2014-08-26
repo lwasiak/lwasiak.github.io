@@ -1,63 +1,1159 @@
-
-<!--
-Copyright (c) 2009 The Chromium Authors. All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are
-met:
-
-   * Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
-   * Redistributions in binary form must reproduce the above
-copyright notice, this list of conditions and the following disclaimer
-in the documentation and/or other materials provided with the
-distribution.
-   * Neither the name of Google Inc. nor the names of its
-contributors may be used to endorse or promote products derived from
-this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
--->
-
 <html>
-  <head>
-    <title>Particles</title>
-    <script type="text/javascript" src="common/webgl-utils.js"></script>
-    <script type="text/javascript" src="debug/webgl-debug.js"></script>
-    <script type="text/javascript" src="resources/o3djs/base.js"></script>
-    <script type="text/javascript" src="resources/cameracontroller.js"></script>
-    <script type="text/javascript" src="resources/fpscounter.js"></script>
-    <script type="text/javascript" src="demo.js"></script>
-  </head>
-  <body onload="main()">
-    <p>
-<H1>Particles</H1>
-    <div>
-      <canvas id="c" style="width: 800px; height: 600px">
-      </canvas>
-    </div>
-    <div>
-      <form>
-        <input type="checkbox" id="animate" checked="true" />
-        Animate Camera
-      </form>
-    </div>
-    <div>
-Press 'P' to make a poof.<br>
-Hold 'T' to make a trail.<br>
-<a href="http://o3d.googlecode.com/svn/trunk/samples/particles.html">Original demo</a> from <a href="http://code.google.com/apis/o3d/">O3D</a>.
-    </div>
-    <div id="fps">
-    </div>
-  </body>
+
+<head>
+<title>Benchmark</title>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+
+<style>
+body {
+  margin: 0px;
+}
+</style>
+
+<script type="text/javascript" src="assets/gl-matrix-min.js"></script>
+<script type="text/javascript" src="assets/webgl-utils.js"></script>
+
+<script type="text/javascript" src="vertexArrays.js"></script>
+<script type="text/javascript" src="utils.js"></script>
+<script type="text/javascript" src="init.js"></script>
+<script type="text/javascript" src="input.js"></script>
+<script type="text/javascript" src="draw.js"></script>
+
+<script id="vertGrass" type="x-shader/x-vertex">
+    attribute vec3 aVertexPosition;
+    attribute vec3 aVertexNormal;
+    attribute vec2 aTextureCoord;
+
+    uniform mat4 uMVMatrix;
+    uniform mat4 uCamMatrix;
+    uniform mat4 uPMatrix;
+    uniform mat3 uNMatrix;
+    uniform mat4 uShadowCamMatrix;
+
+    uniform float uTime;
+    uniform float uBendFactor;
+    uniform sampler2D uWindXSampler;
+    uniform sampler2D uWindZSampler;
+
+    varying vec2 vTextureCoord;
+    varying vec3 vTransformedNormal;
+    varying vec4 vLightPosition;
+    varying vec4 vShadowPosition;
+
+    void main(void) {
+        if (aTextureCoord.y > 0.1) {
+            float xBend = (texture2D(uWindXSampler, vec2((aVertexPosition.x + 0.5) / 128.0 + uTime, -(aVertexPosition.z - 0.5) / 128.0)).r) - 0.5;
+            xBend *= uBendFactor;
+            float zBend = (texture2D(uWindZSampler, vec2((aVertexPosition.x + 0.5) / 128.0, -(aVertexPosition.z - 0.5) / 128.0 - uTime)).r) - 0.5;
+            zBend *= uBendFactor;
+
+            vLightPosition = uMVMatrix * vec4(aVertexPosition.x - xBend, aVertexPosition.y, aVertexPosition.z - zBend, 1.0);
+        } else {
+            vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
+        }
+
+        gl_Position = uPMatrix * uCamMatrix * vLightPosition;
+        vShadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
+        vTextureCoord = aTextureCoord;
+        vTransformedNormal = uNMatrix * aVertexNormal;
+    }
+</script>
+
+<script id="fragGrass" type="x-shader/x-fragment">
+    precision mediump float;
+
+    uniform sampler2D uSampler;
+    uniform sampler2D uShadowSampler;
+    uniform float uRainDensity;
+    uniform bool uUseShadows;
+    uniform bool uUseSoftShadows;
+    uniform vec2 uShadowMapResolution;
+    uniform bool uUseLighting;
+    uniform vec3 uAmbientColor;
+    uniform vec3 uPointLightLocation;
+    uniform vec3 uPointLightColor;
+
+    varying vec2 vTextureCoord;
+    varying vec3 vTransformedNormal;
+    varying vec4 vLightPosition;
+    varying vec4 vShadowPosition;
+
+    const vec2 v2 = vec2(0.5, 0.5);
+    const vec3 grey = vec3(0.2, 0.2, 0.2);
+
+    void main(void) {
+        vec4 textureColor = texture2D(uSampler, vTextureCoord);
+        if (textureColor.a < 0.75) {
+            discard;
+        }
+
+        vec3 lightWeighting;
+        if (!uUseLighting) {
+            lightWeighting = vec3(1.0, 1.0, 1.0);
+        } else {
+            vec3 lightDirection = normalize(uPointLightLocation - vLightPosition.xyz);
+            float directionalLightWeighting = max(dot(normalize(vTransformedNormal), lightDirection), 0.0);
+            lightWeighting = uAmbientColor + uPointLightColor * directionalLightWeighting;
+        }
+
+        float visibility = 1.0;
+        if (uUseShadows) {
+            float shadow = vShadowPosition.z * 0.005;
+            vec4 shadowCoordinateWdivide = vShadowPosition / vShadowPosition.w;
+            vec2 shadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
+
+            if (uUseSoftShadows) {
+                float sum = 0.0;
+                for (float i = -1.0; i < 1.1; i++) {
+                    for (float j = -1.0; j < 1.1; j++) {
+                        float distanceFromLight = texture2D(uShadowSampler, vec2(shadowCoord.x + (j * uShadowMapResolution.x), shadowCoord.y + (i * uShadowMapResolution.y))).z;
+                        float bias = 0.003;
+                        if (shadow > distanceFromLight + bias) {
+                            sum += 1.0;
+                        }
+                    }
+                }
+                visibility = 1.0 - 0.5 * (sum / 9.0);
+            } else {
+                float distanceFromLight = texture2D(uShadowSampler, shadowCoord).z;
+                float bias = 0.003;
+                if (vShadowPosition.w > 0.0 && shadow > distanceFromLight + bias) {
+                    visibility = 0.5;
+                }
+            }
+        }
+
+        gl_FragColor = vec4(textureColor.rgb * lightWeighting * visibility, textureColor.a);
+
+        if (uRainDensity > 0.05) {
+            vec3 grayed = mix(gl_FragColor.rgb, grey, uRainDensity * 0.5);
+            gl_FragColor = vec4(grayed, textureColor.a);            
+        }
+    }
+</script>
+
+<!-- ____________________________________________________________ -->
+
+<script id="vertGround" type="x-shader/x-vertex">
+    attribute vec3 aVertexPosition;
+    attribute vec2 aTextureCoord;
+
+    uniform mat4 uMVMatrix;
+    uniform mat4 uCamMatrix;
+    uniform mat4 uPMatrix;
+    uniform mat4 uShadowCamMatrix;
+
+    varying vec2 vTextureCoord;
+    varying vec4 vLightPosition;
+    varying vec4 vShadowPosition;
+
+    void main(void) {
+        vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
+        gl_Position = uPMatrix * uCamMatrix * vLightPosition;
+
+        vShadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
+        vTextureCoord = aTextureCoord;
+    }
+</script>
+
+<script id="fragGround" type="x-shader/x-fragment">
+    precision mediump float;
+
+    uniform sampler2D uGroundASampler;
+    uniform sampler2D uGroundBSampler;
+    uniform sampler2D uShadowSampler;
+    uniform sampler2D uNormalMapSampler;
+    uniform float uRainDensity;
+    uniform bool uUseShadows;
+    uniform bool uUseSoftShadows;
+    uniform vec2 uShadowMapResolution;
+    uniform bool uUseLighting;
+    uniform vec3 uAmbientColor;
+    uniform vec3 uPointLightLocation;
+    uniform vec3 uPointLightColor;
+
+    varying vec2 vTextureCoord;
+    varying vec4 vLightPosition;
+    varying vec4 vShadowPosition;
+
+    const vec2 v2 = vec2(0.5, 0.5);
+    const vec3 grey = vec3(0.2, 0.2, 0.2);
+
+    void main(void) {
+        vec3 lightWeighting;
+        if (!uUseLighting) {
+            lightWeighting = vec3(1.0, 1.0, 1.0);
+        } else {
+            vec3 normalMap = texture2D(uNormalMapSampler, vec2(vTextureCoord / 10.0) ).rgb;
+            vec3 lightDirection = normalize(uPointLightLocation - vLightPosition.xyz);
+            vec3 normal = normalize(normalMap * 2.0 - 1.0);
+
+            vec3 diffuse = uPointLightColor.rgb * max(dot(normal, lightDirection), 0.0);
+            lightWeighting = uAmbientColor + uPointLightColor * diffuse;
+        }
+
+        float visibility = 1.0;
+        if (uUseShadows) {
+            float shadow = vShadowPosition.z * 0.005;
+            vec4 shadowCoordinateWdivide = vShadowPosition / vShadowPosition.w;
+            vec2 shadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
+
+            if (uUseSoftShadows) {
+                float sum = 0.0;
+                for (float i = -1.0; i < 1.1; i++) {
+                    for (float j = -1.0; j < 1.1; j++) {
+                        float distanceFromLight = texture2D(uShadowSampler, vec2(shadowCoord.x + (j * uShadowMapResolution.x), shadowCoord.y + (i * uShadowMapResolution.y))).z;
+                        float bias = 0.003;
+                        if (shadow > distanceFromLight + bias) {
+                            sum += 1.0;
+                        }
+                    }
+                }
+                visibility = 1.0 - 0.5 * (sum / 9.0);
+            } else {
+                float distanceFromLight = texture2D(uShadowSampler, shadowCoord).z;
+                float bias = 0.003;
+                if (vShadowPosition.w > 0.0 && shadow > distanceFromLight + bias) {
+                    visibility = 0.5;
+                }
+            }
+        }
+
+        vec4 colorA = texture2D(uGroundASampler, vTextureCoord);
+        vec2 coord = vTextureCoord / 2.2;
+        vec4 colorB = texture2D(uGroundBSampler, coord);
+
+        vec4 textureColor = colorA * 0.6 + colorB * 0.4;
+        gl_FragColor = vec4(textureColor.rgb * lightWeighting * visibility, textureColor.a);
+
+        if (uRainDensity > 0.05) {
+            vec3 grayed = mix(gl_FragColor.rgb, grey, uRainDensity * 0.5);
+            gl_FragColor = vec4(grayed, textureColor.a);
+        }
+    }
+</script>
+
+<!-- ____________________________________________________________ -->
+
+<script id="vertTree" type="x-shader/x-vertex">
+    attribute vec3 aVertexPosition;
+    attribute vec3 aVertexNormal;
+    attribute vec2 aTextureCoord;
+
+    uniform mat4 uMVMatrix;
+    uniform mat4 uCamMatrix;
+    uniform mat4 uPMatrix;
+    uniform mat3 uNMatrix;
+    uniform mat4 uShadowCamMatrix;
+
+    uniform float uTime;
+    uniform float uBendFactor;
+    uniform vec2 uTreeCenter;
+    uniform sampler2D uWindXSampler;
+    uniform sampler2D uWindZSampler;
+
+    varying vec2 vTextureCoord;
+    varying vec3 vTransformedNormal;
+    varying vec4 vLightPosition;
+    varying vec4 vShadowPosition;
+
+    void main(void) {
+        if (aTextureCoord.y > 0.75) {
+            float xBend = (texture2D(uWindXSampler, vec2((uTreeCenter.x + 0.5) / 128.0 + uTime, (uTreeCenter.y - 0.5) / 128.0)).r) - 0.5;
+            xBend *= uBendFactor;
+            float zBend = (texture2D(uWindZSampler, vec2((uTreeCenter.x + 0.5) / 128.0, (uTreeCenter.y - 0.5) / 128.0 - uTime)).r) - 0.5;
+            zBend *= uBendFactor;
+
+            vLightPosition = uMVMatrix * vec4(aVertexPosition.x - xBend, aVertexPosition.y, aVertexPosition.z - zBend, 1.0);
+        } else {
+            vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
+        }
+
+        gl_Position = uPMatrix * uCamMatrix * vLightPosition;
+        vShadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
+        vTextureCoord = aTextureCoord;
+        vTransformedNormal = uNMatrix * aVertexNormal;
+    }
+</script>
+
+<script id="fragTree" type="x-shader/x-fragment">
+    precision mediump float;
+
+    uniform sampler2D uSampler;
+    uniform sampler2D uShadowSampler;
+    uniform float uRainDensity;
+    uniform bool uUseShadows;
+    uniform bool uUseSoftShadows;
+    uniform vec2 uShadowMapResolution;
+    uniform bool uUseLighting;
+    uniform vec3 uAmbientColor;
+    uniform vec3 uPointLightLocation;
+    uniform vec3 uPointLightColor;
+
+    varying vec2 vTextureCoord;
+    varying vec3 vTransformedNormal;
+    varying vec4 vLightPosition;
+    varying vec4 vShadowPosition;
+
+    const vec2 v2 = vec2(0.5, 0.5);
+    const vec3 grey = vec3(0.2, 0.2, 0.2);
+
+    void main(void) {
+        vec4 textureColor = texture2D(uSampler, vTextureCoord);
+        if (textureColor.a < 0.75) {
+            discard;
+        }
+
+        vec3 lightWeighting;
+        if (!uUseLighting) {
+            lightWeighting = vec3(1.0, 1.0, 1.0);
+        } else {
+            vec3 lightDirection = normalize(uPointLightLocation - vLightPosition.xyz);
+            float directionalLightWeighting = max(dot(normalize(vTransformedNormal), lightDirection), 0.0);
+            lightWeighting = uAmbientColor + uPointLightColor * directionalLightWeighting;
+        }
+
+        float visibility = 1.0;
+        if (uUseShadows) {
+            float shadow = vShadowPosition.z * 0.005;
+            vec4 shadowCoordinateWdivide = vShadowPosition / vShadowPosition.w;
+            vec2 shadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
+
+            if (uUseSoftShadows) {
+                float sum = 0.0;
+                for (float i = -1.0; i < 1.1; i++) {
+                    for (float j = -1.0; j < 1.1; j++) {
+                        float distanceFromLight = texture2D(uShadowSampler, vec2(shadowCoord.x + (j * uShadowMapResolution.x), shadowCoord.y + (i * uShadowMapResolution.y))).z;
+                        float bias = 0.01;
+                        if (shadow > distanceFromLight + bias) {
+                            sum += 1.0;
+                        }
+                    }
+                }
+                visibility = 1.0 - 0.5 * (sum / 9.0);
+            } else {
+                float distanceFromLight = texture2D(uShadowSampler, shadowCoord).z;
+                float bias = 0.01;
+                if (vShadowPosition.w > 0.0 && shadow > distanceFromLight + bias) {
+                    visibility = 0.5;
+                }
+            }
+        }
+
+        gl_FragColor = vec4(textureColor.rgb * lightWeighting * visibility, textureColor.a);
+
+        if (uRainDensity > 0.05) {
+            vec3 grayed = mix(gl_FragColor.rgb, grey, uRainDensity * 0.5);
+            gl_FragColor = vec4(grayed, textureColor.a);            
+        }
+    }
+</script>
+
+<!-- ____________________________________________________________ -->
+
+<script id="vertSkybox" type="x-shader/x-vertex">
+    attribute vec3 aVertexPosition;
+
+    uniform mat4 uMVMatrix;
+    uniform mat4 uCamMatrix;
+    uniform mat4 uPMatrix;
+
+    varying vec3 vTextureCoord;
+
+    const vec3 v3 = vec3(0.5, 0.5, 0.5);
+
+    void main(void) {
+        gl_Position = uPMatrix * uCamMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+
+        vTextureCoord = aVertexPosition * v3 + v3;
+    }
+</script>
+
+<script id="fragSkybox" type="x-shader/x-fragment">
+    precision mediump float;
+
+    uniform samplerCube uSampler;
+    uniform float uRainDensity;
+
+    varying vec3 vTextureCoord;
+
+    const vec4 grey = vec4(0.5, 0.5, 0.5, 1.0);
+
+    void main(void) {
+        vec4 texture = textureCube(uSampler, vTextureCoord);
+        gl_FragColor = mix(texture, grey, uRainDensity);
+    }
+</script>
+
+<!-- ____________________________________________________________ -->
+
+<script id="vertRain" type="x-shader/x-vertex">
+    attribute vec3 aVertexPosition;
+    attribute float aAlpha;
+
+    uniform mat4 uMVMatrix;
+    uniform mat4 uCamMatrix;
+    uniform mat4 uPMatrix;
+
+    varying float vAlpha;
+
+    void main(void) {
+        gl_Position = uPMatrix * uCamMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+        vAlpha = aAlpha;
+    }
+</script>
+
+<script id="fragRain" type="x-shader/x-fragment">
+    precision mediump float;
+
+    varying float vAlpha;
+
+    void main(void) {
+        gl_FragColor = vec4(0.2, 0.2, 0.2, vAlpha);
+    }
+</script>
+
+<!-- ____________________________________________________________ -->
+
+
+<script id="vertShadow" type="x-shader/x-vertex">
+    attribute vec3 aVertexPosition;
+    attribute vec2 aTextureCoord;
+
+    uniform mat4 uMVPMatrix;
+
+    uniform bool uMoveElement;
+    uniform float uTime;
+    uniform float uBendFactor;
+    const float speed = 2.5;
+
+    varying vec4 vPosition;
+    varying vec2 vTextureCoord;
+
+    void main(void) {
+        if (uMoveElement && aTextureCoord.y > 0.75) {
+            float xBend = (sin(uTime * speed) + 0.8) * 0.5 * uBendFactor;
+            vPosition = uMVPMatrix * vec4(aVertexPosition.x + xBend, aVertexPosition.y, aVertexPosition.z, 1.0);
+            gl_Position = vPosition;  
+        } else {
+            vPosition = uMVPMatrix * vec4(aVertexPosition, 1.0);
+            gl_Position = vPosition;            
+        }
+
+        vTextureCoord = aTextureCoord;
+    }
+</script>
+
+<script id="fragShadow" type="x-shader/x-fragment">
+    precision mediump float;
+
+    uniform sampler2D uSampler;
+
+    varying vec4 vPosition;
+    varying vec2 vTextureCoord;
+
+    void main(void) {
+        vec4 textureColor = texture2D(uSampler, vTextureCoord);
+        if (textureColor.a < 0.75) {
+            discard;
+        }
+
+        float color = vPosition.z * 0.005;
+        gl_FragColor = vec4(color, color, color, 1.0);
+    }
+</script>
+
+<!-- ____________________________________________________________ -->
+
+<script id="vertDof" type="x-shader/x-vertex">
+    attribute vec3 aVertexPosition;
+    attribute vec2 aTextureCoord;
+
+    uniform mat4 uMVPMatrix;
+
+    uniform bool uMoveElement;
+    uniform float uTime;
+    uniform float uBendFactor;
+    const float speed = 2.5;
+
+    varying vec4 vPosition;
+    varying vec2 vTextureCoord;
+
+    void main(void) {
+        if (uMoveElement && aTextureCoord.y > 0.75) {
+            float xBend = (sin(uTime * speed) + 0.8) * 0.5 * uBendFactor;
+            vPosition = uMVPMatrix * vec4(aVertexPosition.x + xBend, aVertexPosition.y, aVertexPosition.z, 1.0);
+            gl_Position = vPosition;
+        } else {
+            vPosition = uMVPMatrix * vec4(aVertexPosition, 1.0);
+            gl_Position = vPosition;            
+        }
+
+        vTextureCoord = aTextureCoord;
+    }
+</script>
+
+<script id="fragDof" type="x-shader/x-fragment">
+    precision mediump float;
+
+    uniform sampler2D uSampler;
+    uniform vec3 uDoFSettings;
+
+    varying vec4 vPosition;
+    varying vec2 vTextureCoord;
+
+    void main(void) {
+        vec4 textureColor = texture2D(uSampler, vTextureCoord);
+        if (textureColor.a < 0.75) {
+            discard;
+        }
+
+        float blurValue;
+        float near = uDoFSettings.x;
+        float middle = uDoFSettings.y;
+        float far = uDoFSettings.z;
+
+        float distance = vPosition.z * 0.005;
+
+        if (   distance < near
+            || distance > far) {
+            blurValue = 1.0;
+        }
+        if (distance > middle) {
+            blurValue = (distance - middle) / (far - middle);
+        }
+        if (distance < middle) {
+            blurValue = (middle - distance) / (middle - near);
+        }
+        gl_FragColor = vec4(blurValue, blurValue, blurValue, 1.0);
+    }
+</script>
+
+<!-- ____________________________________________________________ -->
+
+<script id="vertBlur" type="x-shader/x-vertex">
+    attribute vec3 aVertexPosition;
+
+    varying vec2 vTextureCoord;
+
+    const vec2 v2 = vec2(0.5, 0.5);
+
+    void main(void) {
+        vTextureCoord = aVertexPosition.xy * v2 + v2;
+        gl_Position = vec4(aVertexPosition.xy, 0.0, 1.0);
+    }
+</script>
+
+<script id="fragHorizontalBlurDOF" type="x-shader/x-fragment">
+    precision mediump float;
+
+    uniform sampler2D uSampler;
+    uniform sampler2D uDepthSampler;
+    uniform bool uUseDOF;
+
+    varying vec2 vTextureCoord;
+
+    const float offset = 1.0 / 768.0;
+
+    void main(void) {
+        float zValue = texture2D(uDepthSampler, vTextureCoord).r;
+        if (uUseDOF == true) {
+            float blurSize = offset * zValue;
+
+            float gb1 = 0.38774;
+            float gb2 = 0.24477;
+            float gb3 = 0.06136;
+
+            vec4 sample = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)) * gb1;
+            sample     += texture2D(uSampler, vec2(vTextureCoord.s + blurSize, vTextureCoord.t)) * gb2;
+            sample     += texture2D(uSampler, vec2(vTextureCoord.s - blurSize, vTextureCoord.t)) * gb2;
+            sample     += texture2D(uSampler, vec2(vTextureCoord.s + blurSize * 2.0, vTextureCoord.t)) * gb3;
+            sample     += texture2D(uSampler, vec2(vTextureCoord.s - blurSize * 2.0, vTextureCoord.t)) * gb3;
+
+            gl_FragColor = sample;
+        } else {
+            gl_FragColor = texture2D(uSampler, vTextureCoord);
+        }
+    }
+</script>
+
+
+<script id="fragVerticalBlurDOF" type="x-shader/x-fragment">
+    precision mediump float;
+
+    uniform sampler2D uSampler;
+    uniform sampler2D uDepthSampler;
+    uniform bool uUseDOF;
+
+    varying vec2 vTextureCoord;
+
+    const float offset = 1.0 / 768.0;
+
+    void main(void) {
+        float zValue = texture2D(uDepthSampler, vTextureCoord).r;
+        if (uUseDOF == true) {
+            float blurSize = offset * zValue;
+            float gb1 = 0.38774;
+            float gb2 = 0.24477;
+            float gb3 = 0.06136;
+
+            vec4 sample = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)) * gb1;
+            sample +=  texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t + blurSize)) * gb2;
+            sample +=  texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t - blurSize)) * gb2;
+            sample +=  texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t + blurSize * 2.0)) * gb3;
+            sample +=  texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t - blurSize * 2.0)) * gb3;
+
+            gl_FragColor = sample;
+        }
+        else {
+            gl_FragColor = texture2D(uSampler, vTextureCoord);
+        }
+    }
+</script>
+
+<script id="fragRadialBlur" type="x-shader/x-fragment">
+    precision mediump float;
+
+    uniform sampler2D uSampler;
+    uniform float uSpeed;
+    uniform bool uUseRadial;
+
+    varying vec2 vTextureCoord;
+
+    const float sampleStrength = 2.2;
+    const float sumDivider = 1.0 / 11.0;
+    const float offset = 1.0 / 768.0;
+
+    void main(void) {
+        if (uUseRadial == true && uSpeed > 0.1) {
+            vec4 color = texture2D(uSampler, vTextureCoord);
+            vec2 direction = 0.5 - vTextureCoord;
+            float distance = sqrt(direction.x * direction.x + direction.y * direction.y);
+            direction = direction / distance;
+            vec4 sum = color;
+
+            for (float i = 1.0; i < 10.1; i++) {
+                sum += texture2D(uSampler, vTextureCoord + direction * (offset * i) * uSpeed);
+            }
+            sum *= sumDivider;
+
+            float t = distance * sampleStrength;
+            t = clamp(t, 0.0, 1.0);
+
+            gl_FragColor = mix(color, sum, t);
+        } else {
+            gl_FragColor = texture2D(uSampler, vTextureCoord);
+        }
+    }
+</script>
+
+<!-- ____________________________________________________________ -->
+
+<script type="text/javascript">
+    var gl;
+
+    var g_FPS = 0;
+
+    function redraw() {
+        if (depthOfField) {
+            drawDOF();
+        }
+        if (shadows) {
+            drawShadows();
+        }
+        drawScene();
+        drawSceneFramebuffer();
+    }
+
+    var windTextureMove = 0.0;
+    var totalTime = 0.0;
+    var direction = 1;
+
+    var changeCamRotateHorizontal = false;
+    var targetCamRotateHorizontal = 0;
+    var changeCamRotateVertical = false;
+    var targetCamRotateVertical = 0;
+    var changeSpeed = false;
+    var targetSpeed = 0;
+    var changeCamHeight = false;
+    var targetCamHeight = 0;
+    var yLevel;
+
+    function animate() {
+        windTextureMove += 0.003;
+        if (windTextureMove > 1.0) {
+            windTextureMove = 0.0;
+        }
+        totalTime += 0.01;
+
+        switch(moveMode) {
+            case 1:
+                camXPos += speed * Math.sin(degToRad(camRotateHorizontal));
+                camZPos -= speed * Math.cos(degToRad(camRotateHorizontal));
+                camYPos = getPixelAvg(terrainData, camXPos, -camZPos) / 255.0 * terrainHeight + camHeight;
+                break;
+            case 2:
+                camXPos += speed * Math.sin(degToRad(camRotateHorizontal));
+                camZPos -= speed * Math.cos(degToRad(camRotateHorizontal));
+                camYPos = yLevel + camHeight;
+                break;
+            case 3:
+                camXPos += speed * Math.sin(degToRad(camRotateHorizontal));
+                camZPos -= speed * Math.cos(degToRad(camRotateHorizontal));
+                camYPos -= speed * Math.sin(degToRad(camRotateVertical));
+            default:
+                break;
+        }
+
+        if (camZPos < -58.0 && direction == 2) {
+            test();
+        }
+        if (camXPos > 90.0  && direction == 3) {
+            test();
+        }
+        if (camZPos > -50.0 && direction == 4) {
+            test();
+        }
+        if (camXPos < 44.0  && direction == 5) {
+            test();
+        }
+        if (camZPos < -70.0 && direction == 6) {
+            test();
+        }
+        if (camXPos > 100.0 && direction == 7) {
+            test();
+        }
+        if (camZPos > -16.0 && direction == 8) {
+            test();
+        }
+        if (camZPos < -64.0 && direction == 9) {
+            test();
+        }
+        if (camZPos < -90.0 && direction == 10) {
+            test();
+        }
+        if (camXPos < 5.0   && direction == 11) {
+            test();
+        }
+
+        if (changeCamRotateHorizontal) {
+            if (camRotateHorizontal < targetCamRotateHorizontal) {
+                camRotateHorizontal += 2.0;
+                if (camRotateHorizontal >= targetCamRotateHorizontal) {
+                    changeCamRotateHorizontal = false;
+                }
+            } else {
+                camRotateHorizontal -= 2.0;
+                if (camRotateHorizontal <= targetCamRotateHorizontal) {
+                    changeCamRotateHorizontal = false;
+                }
+            }
+        }
+
+        if (changeCamRotateVertical) {
+            if (camRotateVertical < targetCamRotateVertical) {
+                camRotateVertical += 1.0;
+                if (camRotateVertical >= targetCamRotateVertical) {
+                    changeCamRotateVertical = false;
+                }
+            } else {
+                camRotateVertical -= 1.0;
+                if (camRotateVertical <= targetCamRotateVertical) {
+                    changeCamRotateVertical = false;
+                }
+            }
+        }
+
+        if (changeSpeed) {
+            if (speed < targetSpeed) {
+                speed += 0.03;
+                if (speed >= targetSpeed) {
+                    changeSpeed = false;
+                }
+            } else {
+                speed -= 0.03;
+                if (speed <= targetSpeed) {
+                    changeSpeed = false;
+                }
+            }
+        }
+
+        if (changeCamHeight) {
+            if (camHeight < targetCamHeight) {
+                camHeight += 0.1;
+                if (camHeight >= targetCamHeight) {
+                    changeCamHeight = false;
+                }
+            } else {
+                camHeight -= 0.1;
+                if (camHeight <= targetCamHeight) {
+                    changeCamHeight = false;
+                }
+            }
+        }
+    }
+
+    var numberOfFrames = 0;
+    var startTime = 0;
+    var endTime = 0;
+    var framerateSum = 0;
+    var minFramerate = 99;
+    var maxFramerate = 0;
+
+    function test() {
+        switch(direction) {
+            case 1:
+                moveMode = 1;
+                direction = 2;
+                startTime = new Date().getTime();
+                numberOfFrames = 0;
+                framerateSum = 0;
+                minFramerate = 99;
+                maxFramerate = 0;
+                totalTime = 0.0;
+                camRotateHorizontal = 10.0;
+                camRotateVertical = 0.0;
+                camXPos = 1.0;
+                camYPos = getPixel(terrainData, camXPos, -camZPos).a / 255.0 * terrainHeight + camHeight;
+                camZPos = -1.0;
+                speed = 1.0;
+                camHeight = 1.5;
+                resetRain();
+                break;
+
+            case 2:
+                direction = 3;
+                targetCamRotateHorizontal = 120.0;
+                changeCamRotateHorizontal = true;
+                targetCamRotateVertical = -5.0;
+                changeCamRotateVertical = true;
+                targetSpeed = 2.0;
+                changeSpeed = true;
+                targetCamHeight = 3.0;
+                changeCamHeight = true;
+                break;
+
+            case 3:
+                direction = 4;
+                targetCamRotateHorizontal = 180.0;
+                changeCamRotateHorizontal = true;
+                targetCamRotateVertical = 10.0;
+                changeCamRotateVertical = true;
+                targetSpeed = 1.0;
+                changeSpeed = true;
+                targetCamHeight = 1.5;
+                changeCamHeight = true;
+                break;
+
+            case 4:
+                direction = 5;
+                targetCamRotateHorizontal = 270.0;
+                changeCamRotateHorizontal = true;
+                targetCamRotateVertical = 25.0;
+                changeCamRotateVertical = true;
+                targetSpeed = 1.25;
+                changeSpeed = true;
+                targetCamHeight = 2.0;
+                changeCamHeight = true;
+                break;
+
+            case 5:
+                direction = 6;
+                moveMode = 2;
+                camRotateHorizontal = -90.0;
+                targetCamRotateHorizontal = 20.0;
+                changeCamRotateHorizontal = true;
+                targetCamRotateVertical = 30.0;
+                changeCamRotateVertical = true;
+                targetSpeed = 0.5;
+                changeSpeed = true;
+                camHeight = 0.0;
+                yLevel = camYPos;
+                targetCamHeight = 5.0;
+                changeCamHeight = true;
+                break;
+
+            case 6:
+                direction = 7;
+                targetCamRotateHorizontal = 100.0;
+                changeCamRotateHorizontal = true;
+                targetCamRotateVertical = 20.0;
+                changeCamRotateVertical = true;
+                targetSpeed = 0.7;
+                changeSpeed = true;
+                targetCamHeight = 5.5;
+                changeCamHeight = true;
+                break;
+
+            case 7:
+                direction = 8;
+                targetCamRotateHorizontal = 230.0;
+                changeCamRotateHorizontal = true;
+                targetCamRotateVertical = 30.0;
+                changeCamRotateVertical = true;
+                targetSpeed = 0.6;
+                changeSpeed = true;
+                targetCamHeight = 8.0;
+                changeCamHeight = true;
+                break;
+
+            case 8:
+                direction = 9;
+                camRotateHorizontal = -130.0;
+                targetCamRotateHorizontal = 0.0;
+                changeCamRotateHorizontal = true;
+                targetCamRotateVertical = 30.0;
+                changeCamRotateVertical = true;
+                targetSpeed = 0.6;
+                changeSpeed = true;
+                camHeight = 0.0;
+                yLevel = camYPos;
+                targetCamHeight = 9.0;
+                changeCamHeight = true;
+                break;
+
+            case 9:
+                direction = 10;
+                targetCamRotateHorizontal = 370.0;
+                changeCamRotateHorizontal = true;
+                targetCamRotateVertical = 55.0;
+                changeCamRotateVertical = true;
+                targetSpeed = 0.6;
+                changeSpeed = true;
+                targetCamHeight = 15.0;
+                changeCamHeight = true;
+                break;
+
+            case 10:
+                direction = 11;
+                camRotateHorizontal = 10.0;
+                targetCamRotateHorizontal = 260.0;
+                changeCamRotateHorizontal = true;
+                targetCamRotateVertical = 60.0;
+                changeCamRotateVertical = true;
+                targetSpeed = 1.2;
+                changeSpeed = true;
+                targetCamHeight = 20.0;
+                changeCamHeight = true;
+                break;
+
+            case 11:
+                direction = 1;
+                endTime = new Date().getTime();
+                showStats();
+                moveMode = 4;
+                speed = 0.0;
+                changeCamRotateHorizontal = false;
+                changeCamRotateVertical = false;
+                changeSpeed = false;
+                changeCamHeight = false;
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    function showStats() {
+        var n = "\n";
+        var t = "  ";
+        alert("Done!"
+                +n+
+                "Framerate:"
+                +n+t+ "Number of frames: " + numberOfFrames
+                +n+t+ "Time: " + (endTime - startTime) / 1000 + "s"
+                +n+t+ "Average: " + (framerateSum / numberOfFrames).toFixed(3)
+                +n+t+ "Min: " + minFramerate.toFixed(3)
+                +n+t+ "Max: " + maxFramerate.toFixed(3)
+                +n+n+
+                "Settings:"
+                +n+t+ "Batch grass: "        + batchGrass
+                +n+t+ "Grass density: "      + grassDensity
+                +n+t+ "Batch red flowers: "        + batchFlower[0]
+                +n+t+ "Red flowers density: "      + flowerDensity[0]
+                +n+t+ "Batch blue flowers: "        + batchFlower[1]
+                +n+t+ "Blue flowers density: "      + flowerDensity[1]
+                +n+t+ "Number of trees: "      + numberOfTrees
+                +n+t+ "Rain: "                 + rain
+                +n+t+t+ "Rain density: "     + rainDensity
+                +n+t+ "Render skybox: "      + skybox
+                +n+t+ "Use radial blur: "    + radialBlur
+                +n+t+ "Use depth of field: " + depthOfField
+                +n+t+t+ "Depth of field settings:"
+                +n+t+t+t+ "Near: "   + dofSettings[0]
+                +n+t+t+t+ "Middle: " + dofSettings[1]
+                +n+t+t+t+ "Far: "    + dofSettings[2]
+                +n+t+ "Use shadows: " + shadows
+                +n+t+t+ "Use soft shadows: " + softShadows
+                +n+t+ "Use lighting: " + lighting
+                +n+t+t+ "Light settings:"
+                +n+t+t+t+ "Point light position:"
+                +n+t+t+t+t+ "X: " + lightLocation[0]
+                +n+t+t+t+t+ "Y: " + lightLocation[1]
+                +n+t+t+t+t+ "Z: " + lightLocation[2]
+                +n+t+t+t+ "Point light color:"
+                +n+t+t+t+t+ "R: " + pointLightColor[0]
+                +n+t+t+t+t+ "G: " + pointLightColor[1]
+                +n+t+t+t+t+ "B: " + pointLightColor[2]
+                +n+t+t+t+ "Ambient light color:"
+                +n+t+t+t+t+ "R: " + ambientColor[0]
+                +n+t+t+t+t+ "G: " + ambientColor[1]
+                +n+t+t+t+t+ "B: " + ambientColor[2]
+        );
+    }
+
+    function checkBuffers() {
+        if (   !treeVertexPositionBuffer
+            || !treeIndicesBuffer) {
+            return false;
+        }
+        if (   !terrainVertexPositionBuffer
+            || !terrainTextureCoordsBuffer
+            || !terrainIndicesBuffer) {
+            return false;
+        }
+        return true;
+    }
+
+    var loaded = false;
+    var currentFramerate;
+
+    function tick() {
+        if (!loaded) {
+            loaded = checkBuffers();
+        } else {
+            handleKeys();
+            redraw();
+            animate();
+
+            currentFramerate = g_FPS.snapshot();
+
+            framerateSum += currentFramerate;
+            if (currentFramerate < minFramerate) {
+                minFramerate = currentFramerate;
+            }
+            if (currentFramerate > maxFramerate) {
+                maxFramerate = currentFramerate;
+            }
+            numberOfFrames++;
+
+            spanDrops.innerHTML = rainVertices.length / 6;
+        }
+        requestAnimFrame(tick);
+    }
+
+    var screenWidth;
+    var screenHeight;
+    var spanDrops;
+
+    function webGLStart() {
+        var canvas          = document.getElementById("can");
+        screenWidth         = window.innerWidth;
+        screenHeight        = window.innerHeight;
+        canvas.style.width  = screenWidth + "px";
+        canvas.style.height = screenHeight + "px";
+
+        gl = initGL(canvas);
+        initFramebuffers();
+        initShaders();
+        initBuffers();
+        initTextures();
+        setInputValues();
+
+        g_FPS = new Framerate('frameRate');
+
+        gl.enable(gl.DEPTH_TEST);
+
+        canvas.onmousedown   = handleMouseDown;
+        document.onmouseup   = handleMouseUp;
+        document.onmousemove = handleMouseMove;
+        document.onkeydown   = handleKeyDown;
+        document.onkeyup     = handleKeyUp;
+        spanDrops = document.getElementById("drops");
+
+        tick();
+    }
+</script>
+</head>
+
+
+<body onload="webGLStart();">
+    <canvas id="can" style="border: none;" width="1024" height="1024"></canvas>
+
+    <input id="startTest" type="button" value="Start test" onclick=test()></input><br />
+
+    <div id="frameRate"></div>
+    <div id="frameTime"></div>
+
+    <input type="checkbox" id="batchGrass" onchange="cbBatchGrass(this)" checked /> Batch grass<br />
+    Grass density: <input id="grassDensity" type="range" min=1.0 max=10.0 step=0.1 value=1.0 onchange="moveGrassSlider(this)" />
+    <br />
+
+    <br />
+    <input type="checkbox" id="batchFlowerRed" onchange="cbBatchFlowerRed(this)" checked /> Batch red flowers 
+    <input type="checkbox" id="batchFlowerBlue" onchange="cbBatchFlowerBlue(this)" checked /> Batch blue flowers<br />
+    Red flower density: <input id="flowerRedDensity" type="range" min=1.0 max=10.0 step=0.1 value=4.7 onchange="moveFlowerRedSlider(this)" />
+    <br />
+    Blue flower density: <input id="flowerBlueDensity" type="range" min=1.0 max=10.0 step=0.1 value=5.3 onchange="moveFlowerBlueSlider(this)" />
+    <br />
+
+    <br />
+    Number of trees: <input type="number" id="numberOfTrees" min=0 max=6 value=6 onchange="numTrees(this)" /><br />
+
+    <br />
+    <input type="checkbox" id="rain" onchange="cbRain(this)" checked /> Rain<br />
+    Rain density: <input id="rainDensity" type="range" min=1 max=250000 step=1 value=10000 onchange="moveRainSlider(this)" /><div> Drops: <span id="drops"></span></div>
+    <br />
+
+    <br />
+    <input type="checkbox" id="skybox" onchange="cbSkybox(this)" checked /> Render Skybox<br />
+
+    <br />
+    <input type="checkbox" id="radialBlur" onchange="cbRadialBlur(this)" checked /> Use Radial Blur<br />
+
+    <br />
+    <input type="checkbox" id="depthOfField" onchange="cbDepthOfField(this)" checked /> Use Depth of Field<br />
+
+    <h2>Depth of Field:</h2>
+    <table style="border: 0; padding: 10px;">
+        <tr>
+            <td>Near: <input type="text" id="near" value="0.1" onchange="tbDOFN(this)" />
+            <td>Middle: <input type="text" id="middle" value="0.3" onchange="tbDOFM(this)" />
+            <td>Far: <input type="text" id="far" value="0.5" onchange="tbDOFF(this)" />
+        </tr>
+    </table>
+
+    <br />
+    <input type="checkbox" id="shadows" onchange="cbShadows(this)" checked /> Use shadows
+        <input type="checkbox" id="softShadows" onchange="cbSoftShadows(this)" checked /> Use soft shadows<br />
+    <br />
+    <input type="checkbox" id="lighting" onchange="cbLighting(this)" checked /> Use lighting<br />
+
+    <h2>Point light:</h2>
+    <table style="border: 0; padding: 10px;">
+        <tr>
+            <td><b>Location:</b>
+            <td>X: <input type="text" id="lightLocationX" value="10.0" onchange="tbLightLocationX(this)" />
+            <td>Y: <input type="text" id="lightLocationY" value="30.0" onchange="tbLightLocationY(this)" />
+            <td>Z: <input type="text" id="lightLocationZ" value="20.0" onchange="tbLightLocationZ(this)" />
+        </tr>
+        <tr>
+            <td><b>Color:</b>
+            <td>R: <input type="text" id="lightR" value="0.8" onchange="tbLightR(this)" />
+            <td>G: <input type="text" id="lightG" value="0.8" onchange="tbLightG(this)" />
+            <td>B: <input type="text" id="lightB" value="0.8" onchange="tbLightB(this)" />
+        </tr>
+    </table>
+
+    <h2>Ambient light:</h2>
+    <table style="border: 0; padding: 10px;">
+        <tr>
+            <td><b>Color:</b>
+            <td>R: <input type="text" id="ambientR" value="0.4" onchange="tbAmbientR(this)" />
+            <td>G: <input type="text" id="ambientG" value="0.4" onchange="tbAmbientG(this)" />
+            <td>B: <input type="text" id="ambientB" value="0.4" onchange="tbAmbientB(this)" />
+        </tr>
+    </table>
+</body>
+
 </html>
