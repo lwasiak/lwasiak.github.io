@@ -100,7 +100,9 @@ function setInputValues() {
     flowerBlueDensitySlider.value = flowerBlueDensitySlider.max - flowerDensity[1] + 1.0;
 
     document.getElementById("numberOfTrees").value = numberOfTrees;
-
+	
+	document.getElementById("wind").checked = wind;
+	
     document.getElementById("rain").checked = rain;
     var rainDensitySlider = document.getElementById("rainDensity");
     rainDensitySlider.value = rainDensity;
@@ -179,6 +181,12 @@ function numTrees(s) {
     }
     numberOfTrees = number;
     s.value = number;
+}
+
+function cbWind(s) {
+    wind = !wind;
+    s.checked = wind;
+	totalTime = 0.0;
 }
 
 function cbRain(s) {

@@ -59,11 +59,21 @@ var shaderHorizontalBlurDOFProgram;
 var shaderVerticalBlurDOFProgram;
 var shaderRadialBlurProgram;
 
+var vertexTextureUnits;
+
 function initShaders() {
     mat4.perspective(pSceneMatrix, 45, screenWidth / screenHeight, 0.1, 200.0);
-
+    
+    vertexTextureUnits = gl.getParameter(gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS);
+    
     var fragmentShader = getShader(gl, "fragGrass");
-    var vertexShader = getShader(gl, "vertGrass");
+    var vertexShaderID = "vertGrass";
+    if (vertexTextureUnits == 0) {
+        vertexShaderID = "vertGrassNoSampler";
+        wind = false;
+        document.getElementById("wind").disabled = true;
+    }
+    var vertexShader = getShader(gl, vertexShaderID);
 
     shaderGrassProgram = gl.createProgram();
     gl.attachShader(shaderGrassProgram, vertexShader);
@@ -87,8 +97,6 @@ function initShaders() {
     shaderGrassProgram.nMatrixUniform = gl.getUniformLocation(shaderGrassProgram, "uNMatrix");
     shaderGrassProgram.samplerUniform = gl.getUniformLocation(shaderGrassProgram, "uSampler");
     shaderGrassProgram.shadowSamplerUniform = gl.getUniformLocation(shaderGrassProgram, "uShadowSampler");
-    shaderGrassProgram.windXSamplerUniform = gl.getUniformLocation(shaderGrassProgram, "uWindXSampler");
-    shaderGrassProgram.windZSamplerUniform = gl.getUniformLocation(shaderGrassProgram, "uWindZSampler");
     shaderGrassProgram.useShadowsUniform = gl.getUniformLocation(shaderGrassProgram, "uUseShadows");
     shaderGrassProgram.useSoftShadowsUniform = gl.getUniformLocation(shaderGrassProgram, "uUseSoftShadows");
     shaderGrassProgram.shadowMapResolutionUniform = gl.getUniformLocation(shaderGrassProgram, "uShadowMapResolution");
@@ -96,9 +104,14 @@ function initShaders() {
     shaderGrassProgram.ambientColorUniform = gl.getUniformLocation(shaderGrassProgram, "uAmbientColor");
     shaderGrassProgram.pointLightLocationUniform = gl.getUniformLocation(shaderGrassProgram, "uPointLightLocation");
     shaderGrassProgram.pointLightColorUniform = gl.getUniformLocation(shaderGrassProgram, "uPointLightColor");
-    shaderGrassProgram.timeUniform = gl.getUniformLocation(shaderGrassProgram, "uTime");
-    shaderGrassProgram.bendFactorUniform = gl.getUniformLocation(shaderGrassProgram, "uBendFactor");
     shaderGrassProgram.rainDensityUniform = gl.getUniformLocation(shaderGrassProgram, "uRainDensity");
+    if (vertexTextureUnits != 0) {
+        shaderGrassProgram.useWindUniform = gl.getUniformLocation(shaderGrassProgram, "uUseWind");
+        shaderGrassProgram.windXSamplerUniform = gl.getUniformLocation(shaderGrassProgram, "uWindXSampler");
+        shaderGrassProgram.windZSamplerUniform = gl.getUniformLocation(shaderGrassProgram, "uWindZSampler");
+        shaderGrassProgram.timeUniform = gl.getUniformLocation(shaderGrassProgram, "uTime");
+        shaderGrassProgram.bendFactorUniform = gl.getUniformLocation(shaderGrassProgram, "uBendFactor");
+    }
 
     gl.uniformMatrix4fv(shaderGrassProgram.pMatrixUniform, false, pSceneMatrix);
     gl.uniform2f(shaderGrassProgram.shadowMapResolutionUniform, 1.0 / (screenWidth * shadowMapQuality), 1.0 / (screenHeight * shadowMapQuality));
@@ -145,7 +158,11 @@ function initShaders() {
 //----------------------------------------------------
 
     fragmentShader = getShader(gl, "fragTree");
-    vertexShader = getShader(gl, "vertTree");
+    vertexShaderID = "vertTree";
+    if (vertexTextureUnits == 0) {
+        vertexShaderID = "vertTreeNoSampler";
+    }
+    vertexShader = getShader(gl, vertexShaderID);
 
     shaderTreeProgram = gl.createProgram();
     gl.attachShader(shaderTreeProgram, vertexShader);
@@ -167,10 +184,8 @@ function initShaders() {
     shaderTreeProgram.camMatrixUniform = gl.getUniformLocation(shaderTreeProgram, "uCamMatrix");
     shaderTreeProgram.shadowCamMatrixUniform = gl.getUniformLocation(shaderTreeProgram, "uShadowCamMatrix");
     shaderTreeProgram.nMatrixUniform = gl.getUniformLocation(shaderTreeProgram, "uNMatrix");
+    shaderTreeProgram.samplerUniform = gl.getUniformLocation(shaderTreeProgram, "uSampler");
     shaderTreeProgram.shadowSamplerUniform = gl.getUniformLocation(shaderTreeProgram, "uShadowSampler");
-    shaderTreeProgram.treeCenterUniform = gl.getUniformLocation(shaderTreeProgram, "uTreeCenter");
-    shaderTreeProgram.windXSamplerUniform = gl.getUniformLocation(shaderTreeProgram, "uWindXSampler");
-    shaderTreeProgram.windZSamplerUniform = gl.getUniformLocation(shaderTreeProgram, "uWindZSampler");
     shaderTreeProgram.useShadowsUniform = gl.getUniformLocation(shaderTreeProgram, "uUseShadows");
     shaderTreeProgram.useSoftShadowsUniform = gl.getUniformLocation(shaderTreeProgram, "uUseSoftShadows");
     shaderTreeProgram.shadowMapResolutionUniform = gl.getUniformLocation(shaderTreeProgram, "uShadowMapResolution");
@@ -178,9 +193,15 @@ function initShaders() {
     shaderTreeProgram.ambientColorUniform = gl.getUniformLocation(shaderTreeProgram, "uAmbientColor");
     shaderTreeProgram.pointLightLocationUniform = gl.getUniformLocation(shaderTreeProgram, "uPointLightLocation");
     shaderTreeProgram.pointLightColorUniform = gl.getUniformLocation(shaderTreeProgram, "uPointLightColor");
-    shaderTreeProgram.timeUniform = gl.getUniformLocation(shaderTreeProgram, "uTime");
-    shaderTreeProgram.bendFactorUniform = gl.getUniformLocation(shaderTreeProgram, "uBendFactor");
     shaderTreeProgram.rainDensityUniform = gl.getUniformLocation(shaderTreeProgram, "uRainDensity");
+    if (vertexTextureUnits != 0) {
+        shaderTreeProgram.useWindUniform = gl.getUniformLocation(shaderTreeProgram, "uUseWind");
+        shaderTreeProgram.treeCenterUniform = gl.getUniformLocation(shaderTreeProgram, "uTreeCenter");
+        shaderTreeProgram.windXSamplerUniform = gl.getUniformLocation(shaderTreeProgram, "uWindXSampler");
+        shaderTreeProgram.windZSamplerUniform = gl.getUniformLocation(shaderTreeProgram, "uWindZSampler");
+        shaderTreeProgram.timeUniform = gl.getUniformLocation(shaderTreeProgram, "uTime");
+        shaderTreeProgram.bendFactorUniform = gl.getUniformLocation(shaderTreeProgram, "uBendFactor");
+    }
 
     gl.uniformMatrix4fv(shaderTreeProgram.pMatrixUniform, false, pSceneMatrix);
     gl.uniform2f(shaderTreeProgram.shadowMapResolutionUniform, 1.0 / (screenWidth * shadowMapQuality), 1.0 / (screenHeight * shadowMapQuality));
@@ -388,6 +409,7 @@ function checkFramebuffer(id) {
             break;
         default:
             alert(id + ": Incomplete framebuffer: " + status);
+            break;
     }
 }
 
@@ -442,11 +464,11 @@ function handleLoadedTexture(texture, texParam) {
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
+    gl.generateMipmap(gl.TEXTURE_2D);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, texParam);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, texParam);
-    gl.generateMipmap(gl.TEXTURE_2D);
     gl.bindTexture(gl.TEXTURE_2D, null);
 }
 
@@ -562,17 +584,17 @@ function initTextures() {
 var maxClusterSize = 64;
 
 var grassVertexPositionBuffer;
-var grassVertexIndicesBuffer;
+var grassIndicesBuffer;
 var grassBatchedVertexPositionBuffer = [];
-var grassBatchedVertexIndicesBuffer;
+var grassBatchedIndicesBuffer;
 
 var flowerVertexPositionBuffer;
-var flowerVertexIndicesBuffer;
+var flowerIndicesBuffer;
 var flowerBatchedVertexPositionBuffer = [[]];
-var flowerBatchedVertexIndicesBuffer = [];
+var flowerBatchedIndicesBuffer = [];
 
 var skyboxVertexPositionBuffer;
-var skyboxVertexIndicesBuffer;
+var skyboxIndicesBuffer;
 
 var rainVertexPositionBuffer;
 var rainAlphaBuffer;
@@ -588,16 +610,16 @@ function initBuffers() {
     grassVertexPositionBuffer.itemSize = 3;
     grassVertexPositionBuffer.numItems = 12;
 
-    grassVertexIndicesBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, grassVertexIndicesBuffer);
+    grassIndicesBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, grassIndicesBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(grassIndices), gl.STATIC_DRAW);
-    grassVertexIndicesBuffer.itemSize = 1;
-    grassVertexIndicesBuffer.numItems = 18;
+    grassIndicesBuffer.itemSize = 1;
+    grassIndicesBuffer.numItems = 18;
 
     for (var i = 0; i < 4; i++) {
         grassBatchedVertexPositionBuffer[i] = gl.createBuffer();
     }
-    grassBatchedVertexIndicesBuffer = gl.createBuffer();
+    grassBatchedIndicesBuffer = gl.createBuffer();
 
     flowerVertexPositionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, flowerVertexPositionBuffer);
@@ -605,18 +627,18 @@ function initBuffers() {
     flowerVertexPositionBuffer.itemSize = 3;
     flowerVertexPositionBuffer.numItems = 12;
 
-    flowerVertexIndicesBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, flowerVertexIndicesBuffer);
+    flowerIndicesBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, flowerIndicesBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(flowerIndices), gl.STATIC_DRAW);
-    flowerVertexIndicesBuffer.itemSize = 1;
-    flowerVertexIndicesBuffer.numItems = 18;
+    flowerIndicesBuffer.itemSize = 1;
+    flowerIndicesBuffer.numItems = 18;
 
     for (var i = 0; i < flowerTypes; i++) {
         flowerBatchedVertexPositionBuffer[i] = [];
         for (var j = 0; j < 4; j++) {
             flowerBatchedVertexPositionBuffer[i][j] = gl.createBuffer();
         }
-        flowerBatchedVertexIndicesBuffer[i] = gl.createBuffer();
+        flowerBatchedIndicesBuffer[i] = gl.createBuffer();
     } 
 
     initTerrain();
@@ -627,11 +649,11 @@ function initBuffers() {
     skyboxVertexPositionBuffer.itemSize = 3;
     skyboxVertexPositionBuffer.numItems = 24;
 
-    skyboxVertexIndicesBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, skyboxVertexIndicesBuffer);
+    skyboxIndicesBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, skyboxIndicesBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(skyboxIndices), gl.STATIC_DRAW);
-    skyboxVertexIndicesBuffer.itemSize = 1;
-    skyboxVertexIndicesBuffer.numItems = 36;
+    skyboxIndicesBuffer.itemSize = 1;
+    skyboxIndicesBuffer.numItems = 36;
 
     rainVertexPositionBuffer = gl.createBuffer();
     rainVertexPositionBuffer.itemSize = 3;
@@ -729,10 +751,10 @@ function countGrassClusterBuffers() {
         }
     }
 
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, grassBatchedVertexIndicesBuffer);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, grassBatchedIndicesBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(grassClusterIndices), gl.STATIC_DRAW);
-    grassBatchedVertexIndicesBuffer.itemSize = 1;
-    grassBatchedVertexIndicesBuffer.numItems = 18 * grassInCluster;
+    grassBatchedIndicesBuffer.itemSize = 1;
+    grassBatchedIndicesBuffer.numItems = 18 * grassInCluster;
 }
 
 function countFlowerClusterVertices(flowerClusterVertices, x, z, clusterSize, flowerDensity) {
@@ -808,10 +830,10 @@ function countFlowerClusterBuffers(flowerType) {
         }
     }
 
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, flowerBatchedVertexIndicesBuffer[flowerType]);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, flowerBatchedIndicesBuffer[flowerType]);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(flowerClusterIndices), gl.STATIC_DRAW);
-    flowerBatchedVertexIndicesBuffer[flowerType].itemSize = 1;
-    flowerBatchedVertexIndicesBuffer[flowerType].numItems = 18 * flowerInCluster;
+    flowerBatchedIndicesBuffer[flowerType].itemSize = 1;
+    flowerBatchedIndicesBuffer[flowerType].numItems = 18 * flowerInCluster;
 }
 
 var terrainVertex = [];

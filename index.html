@@ -29,8 +29,12 @@ body {
     uniform mat4 uPMatrix;
     uniform mat3 uNMatrix;
     uniform mat4 uShadowCamMatrix;
-
-
+	
+	uniform bool uUseWind;
+    uniform float uTime;
+    uniform float uBendFactor;
+    uniform sampler2D uWindXSampler;
+    uniform sampler2D uWindZSampler;
 
     varying vec2 vTextureCoord;
     varying vec3 vTransformedNormal;
@@ -38,9 +42,42 @@ body {
     varying vec4 vShadowPosition;
 
     void main(void) {
+        if (uUseWind && aTextureCoord.y > 0.1) {
+            float xBend = (texture2D(uWindXSampler, vec2((aVertexPosition.x + 0.5) / 128.0 + uTime, -(aVertexPosition.z - 0.5) / 128.0)).r) - 0.5;
+            xBend *= uBendFactor;
+            float zBend = (texture2D(uWindZSampler, vec2((aVertexPosition.x + 0.5) / 128.0, -(aVertexPosition.z - 0.5) / 128.0 - uTime)).r) - 0.5;
+            zBend *= uBendFactor;
 
+            vLightPosition = uMVMatrix * vec4(aVertexPosition.x - xBend, aVertexPosition.y, aVertexPosition.z - zBend, 1.0);
+        } else {
+            vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
+        }
 
-        vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
+        gl_Position = uPMatrix * uCamMatrix * vLightPosition;
+        vShadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
+        vTextureCoord = aTextureCoord;
+        vTransformedNormal = uNMatrix * aVertexNormal;
+    }
+</script>
+
+<script id="vertGrassNoSampler" type="x-shader/x-vertex">
+    attribute vec3 aVertexPosition;
+    attribute vec3 aVertexNormal;
+    attribute vec2 aTextureCoord;
+
+    uniform mat4 uMVMatrix;
+    uniform mat4 uCamMatrix;
+    uniform mat4 uPMatrix;
+    uniform mat3 uNMatrix;
+    uniform mat4 uShadowCamMatrix;
+
+    varying vec2 vTextureCoord;
+    varying vec3 vTransformedNormal;
+    varying vec4 vLightPosition;
+    varying vec4 vShadowPosition;
+
+    void main(void) {
+		vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
         gl_Position = uPMatrix * uCamMatrix * vLightPosition;
         vShadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
         vTextureCoord = aTextureCoord;
@@ -235,7 +272,12 @@ body {
     uniform mat3 uNMatrix;
     uniform mat4 uShadowCamMatrix;
 
-
+	uniform bool uUseWind;
+    uniform float uTime;
+    uniform float uBendFactor;
+    uniform vec2 uTreeCenter;
+    uniform sampler2D uWindXSampler;
+    uniform sampler2D uWindZSampler;
 
     varying vec2 vTextureCoord;
     varying vec3 vTransformedNormal;
@@ -243,8 +285,42 @@ body {
     varying vec4 vShadowPosition;
 
     void main(void) {
+        if (uUseWind && aTextureCoord.y > 0.75) {
+            float xBend = (texture2D(uWindXSampler, vec2((uTreeCenter.x + 0.5) / 128.0 + uTime, (uTreeCenter.y - 0.5) / 128.0)).r) - 0.5;
+            xBend *= uBendFactor;
+            float zBend = (texture2D(uWindZSampler, vec2((uTreeCenter.x + 0.5) / 128.0, (uTreeCenter.y - 0.5) / 128.0 - uTime)).r) - 0.5;
+            zBend *= uBendFactor;
 
-        vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
+            vLightPosition = uMVMatrix * vec4(aVertexPosition.x - xBend, aVertexPosition.y, aVertexPosition.z - zBend, 1.0);
+        } else {
+            vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
+        }
+
+        gl_Position = uPMatrix * uCamMatrix * vLightPosition;
+        vShadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
+        vTextureCoord = aTextureCoord;
+        vTransformedNormal = uNMatrix * aVertexNormal;
+    }
+</script>
+
+<script id="vertTreeNoSampler" type="x-shader/x-vertex">
+    attribute vec3 aVertexPosition;
+    attribute vec3 aVertexNormal;
+    attribute vec2 aTextureCoord;
+	
+    uniform mat4 uMVMatrix;
+    uniform mat4 uCamMatrix;
+    uniform mat4 uPMatrix;
+    uniform mat3 uNMatrix;
+    uniform mat4 uShadowCamMatrix;
+
+    varying vec2 vTextureCoord;
+    varying vec3 vTransformedNormal;
+    varying vec4 vLightPosition;
+    varying vec4 vShadowPosition;
+
+    void main(void) {
+		vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
         gl_Position = uPMatrix * uCamMatrix * vLightPosition;
         vShadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
         vTextureCoord = aTextureCoord;
@@ -950,6 +1026,7 @@ body {
                 +n+t+ "Batch blue flowers: "        + batchFlower[1]
                 +n+t+ "Blue flowers density: "      + flowerDensity[1]
                 +n+t+ "Number of trees: "      + numberOfTrees
+				+n+t+ "Wind: "                 + wind
                 +n+t+ "Rain: "                 + rain
                 +n+t+t+ "Rain density: "     + rainDensity
                 +n+t+ "Render skybox: "      + skybox
@@ -1076,6 +1153,9 @@ body {
     <br />
     Number of trees: <input type="number" id="numberOfTrees" min=0 max=6 value=6 onchange="numTrees(this)" /><br />
 
+    <br />
+    <input type="checkbox" id="wind" onchange="cbWind(this)" checked /> Wind<br />
+	
     <br />
     <input type="checkbox" id="rain" onchange="cbRain(this)" checked /> Rain<br />
     Rain density: <input id="rainDensity" type="range" min=1 max=250000 step=1 value=10000 onchange="moveRainSlider(this)" /><div> Drops: <span id="drops"></span></div>
