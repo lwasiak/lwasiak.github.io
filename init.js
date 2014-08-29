@@ -461,7 +461,6 @@ function initFramebuffers() {
 }
 
 function handleLoadedTexture(texture, texParam) {
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
     gl.generateMipmap(gl.TEXTURE_2D);
@@ -485,7 +484,6 @@ function loadCubeMap(texture, faces) {
         image.onload = function(texture, face, image) {
             return function() {
                 gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
-                gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
                 gl.texImage2D(face, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
             }
         } (texture, face, image);

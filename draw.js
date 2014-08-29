@@ -1,5 +1,5 @@
 var camRotateVertical = 0.0;
-var camRotateHorizontal = 45.1;
+var camRotateHorizontal = 55.0;
 var camXPos = 5.0;
 var camYPos = 20.0;
 var camZPos = -15.0;
@@ -13,8 +13,6 @@ var shadowYPos = 55.0;
 var shadowZPos = 40.0;
 
 var terrainHeight = 20.0;
-
-var wind = true;
 
 var batchGrass = true;
 var grassBendFactor = 0.75;
@@ -30,6 +28,8 @@ var treeScale = [0.25, 0.2, 0.25, 0.27, 0.25, 0.22];
 var treeXPos = [45.0, 20.0, 80.0, 30.0, 40.0, 90.0];
 var treeZPos = [-30.0, -60.0, -60.0, -90.0, -95.0, -10.0];
 var treeBendFactor = [10.0, 10.0, 10.0, 10.0, 10.0, 10.0];
+
+var wind = true;
 
 var rain = true;
 var rainDensity = 10000;
@@ -105,6 +105,7 @@ function drawShadows() {
     mat4.rotateX(camShadowMatrix, camShadowMatrix, degToRad(shadowRotateVertical));
     mat4.rotateY(camShadowMatrix, camShadowMatrix, degToRad(shadowRotateHorizontal));
     mat4.translate(camShadowMatrix, camShadowMatrix, [-shadowXPos, -shadowYPos, -shadowZPos]);
+
     gl.uniform1f(shaderShadowProgram.timeUniform, totalTime);
 
     gl.enableVertexAttribArray(shaderShadowProgram.vertexPositionAttribute);
@@ -162,9 +163,6 @@ function drawShadows() {
         gl.drawElements(gl.TRIANGLES, grassBatchedIndicesBuffer.numItems, gl.UNSIGNED_SHORT, 0);
     }
 
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, null);
-
     //Flower
     for (var flowerType = 0; flowerType < flowerTypes; flowerType++) {
         mat4.identity(mvSceneMatrix);
@@ -188,10 +186,7 @@ function drawShadows() {
             gl.vertexAttribPointer(shaderShadowProgram.textureCoordAttribute, 2, gl.FLOAT, gl.FALSE, 8 * 4, 6 * 4);
 
             gl.drawElements(gl.TRIANGLES, flowerBatchedIndicesBuffer[flowerType].numItems, gl.UNSIGNED_SHORT, 0);
-        }
-
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, null);       
+        }     
     }
 
     //Tree
@@ -349,7 +344,10 @@ function drawDOF() {
         gl.drawElements(gl.TRIANGLES, treeIndicesBuffer[i].numItems, gl.UNSIGNED_SHORT, 0);
     }
 
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, null);
     gl.disableVertexAttribArray(shaderDofProgram.vertexPositionAttribute);
+    gl.disableVertexAttribArray(shaderDofProgram.textureCoordAttribute);
 }
 
 function drawScene() {
