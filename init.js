@@ -928,9 +928,9 @@ var rainAlphas = [];
 function initRain() {
     seed = 1;
     for (var i = 0; i < rainDensity; i++) {
-        var randomX = randomFloat(0.0, 128.0);
+        var randomX = randomFloat(0.0, terrainSize);
         var randomY = randomFloat(35.0, 20.0);
-        var randomZ = randomFloat(0.0, -128.0);
+        var randomZ = randomFloat(0.0, -terrainSize);
         var randomHeight = randomFloat(0.5, 2.0);
         var randomAngle = randomFloat(0.25, 0.75);
 
@@ -949,9 +949,9 @@ function countGrayedSkybox() {
 }
 
 function resetDrop(index){
-    var randomX = randomFloat(0.0, 128.0);
+    var randomX = randomFloat(0.0, terrainSize);
     var randomY = randomFloat(35.0, 20.0);
-    var randomZ = randomFloat(0.0, -128.0);
+    var randomZ = randomFloat(0.0, -terrainSize);
     var randomHeight = randomFloat(0.5, 2.0);
     var randomAngle = randomFloat(0.25, 0.75);
 

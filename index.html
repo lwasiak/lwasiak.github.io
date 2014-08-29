@@ -858,11 +858,6 @@ body {
             case 1:
                 moveMode = 1;
                 direction = 2;
-                startTime = new Date().getTime();
-                numberOfFrames = 0;
-                framerateSum = 0;
-                minFramerate = 99;
-                maxFramerate = 0;
                 totalTime = 0.0;
                 camRotateHorizontal = 10.0;
                 camRotateVertical = 0.0;
@@ -875,6 +870,12 @@ body {
                 break;
 
             case 2:
+                startTime = new Date().getTime();
+                numberOfFrames = 0;
+                framerateSum = 0;
+                minFramerate = 99;
+                maxFramerate = 0;
+
                 direction = 3;
                 targetCamRotateHorizontal = 120.0;
                 changeCamRotateHorizontal = true;
@@ -991,9 +992,10 @@ body {
                 break;
 
             case 11:
-                direction = 1;
                 endTime = new Date().getTime();
                 showStats();
+                
+                direction = 1;
                 moveMode = 4;
                 speed = 0.0;
                 changeCamRotateHorizontal = false;
@@ -1011,15 +1013,13 @@ body {
         var n = "\n";
         var t = "  ";
         alert("Done!"
-                +n+
-                "Framerate:"
+                +n+ "Framerate:"
                 +n+t+ "Number of frames: " + numberOfFrames
                 +n+t+ "Time: " + (endTime - startTime) / 1000 + "s"
                 +n+t+ "Average: " + (framerateSum / numberOfFrames).toFixed(3)
                 +n+t+ "Min: " + minFramerate.toFixed(3)
                 +n+t+ "Max: " + maxFramerate.toFixed(3)
-                +n+n+
-                "Settings:"
+                +n+n+ "Settings:"
                 +n+t+ "Batch grass: "        + batchGrass
                 +n+t+ "Grass density: "      + grassDensity
                 +n+t+ "Batch red flowers: "        + batchFlower[0]
