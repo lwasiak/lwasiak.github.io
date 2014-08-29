@@ -753,6 +753,7 @@ body {
                 camXPos += speed * Math.sin(degToRad(camRotateHorizontal));
                 camZPos -= speed * Math.cos(degToRad(camRotateHorizontal));
                 camYPos -= speed * Math.sin(degToRad(camRotateVertical));
+                break;
             default:
                 break;
         }
@@ -1116,6 +1117,7 @@ body {
         g_FPS = new Framerate('frameRate');
 
         gl.enable(gl.DEPTH_TEST);
+        gl.depthFunc(gl.LEQUAL);
 
         canvas.onmousedown   = handleMouseDown;
         document.onmouseup   = handleMouseUp;

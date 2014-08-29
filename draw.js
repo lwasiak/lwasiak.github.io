@@ -1,5 +1,5 @@
 var camRotateVertical = 0.0;
-var camRotateHorizontal = 45.0;
+var camRotateHorizontal = 45.1;
 var camXPos = 5.0;
 var camYPos = 20.0;
 var camZPos = -15.0;
@@ -755,6 +755,7 @@ function drawSkybox() {
 }
 
 function drawSceneFramebuffer() {
+    gl.disable(gl.DEPTH_TEST);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     var textureToDraw = sceneTexture;
@@ -763,7 +764,7 @@ function drawSceneFramebuffer() {
         gl.useProgram(shaderHorizontalBlurDOFProgram);
 
         gl.viewport(0, 0, screenWidth, screenHeight);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.clear(gl.COLOR_BUFFER_BIT);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, sceneVertexPositionBuffer);
         gl.vertexAttribPointer(shaderHorizontalBlurDOFProgram.vertexPositionAttribute, sceneVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -773,7 +774,7 @@ function drawSceneFramebuffer() {
         gl.uniform1i(shaderHorizontalBlurDOFProgram.useDOFUniform, depthOfField);
 
         gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, sceneTexture);
+        gl.bindTexture(gl.TEXTURE_2D, textureToDraw);
         gl.uniform1i(shaderHorizontalBlurDOFProgram.samplerUniform, 0);
 
         gl.activeTexture(gl.TEXTURE1);
@@ -794,7 +795,7 @@ function drawSceneFramebuffer() {
         gl.useProgram(shaderVerticalBlurDOFProgram);
 
         gl.viewport(0, 0, screenWidth, screenHeight);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.clear(gl.COLOR_BUFFER_BIT);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, sceneVertexPositionBuffer);
         gl.vertexAttribPointer(shaderVerticalBlurDOFProgram.vertexPositionAttribute, sceneVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -848,4 +849,5 @@ function drawSceneFramebuffer() {
     gl.bindTexture(gl.TEXTURE_2D, null);
     gl.disableVertexAttribArray(shaderRadialBlurProgram.vertexPositionAttribute);
     gl.disable(gl.BLEND);
+    gl.enable(gl.DEPTH_TEST);
 }
