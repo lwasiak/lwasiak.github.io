@@ -298,7 +298,7 @@ body {
 
         gl_Position = uPMatrix * uCamMatrix * vLightPosition;
         vShadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
-        vTextureCoord = aTextureCoord;
+        vTextureCoord = 1.0 - aTextureCoord;
         vTransformedNormal = uNMatrix * aVertexNormal;
     }
 </script>
@@ -323,7 +323,7 @@ body {
 		vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
         gl_Position = uPMatrix * uCamMatrix * vLightPosition;
         vShadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
-        vTextureCoord = aTextureCoord;
+        vTextureCoord = 1.0 - aTextureCoord;
         vTransformedNormal = uNMatrix * aVertexNormal;
     }
 </script>
