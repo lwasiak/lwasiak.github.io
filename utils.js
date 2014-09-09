@@ -138,7 +138,5 @@ Framerate.prototype.snapshot = function()
         while (this.framerates.length > this.numFramerates)
             this.framerates.shift();
         this.renderTime = newTime;
-
-        return framerate;
     }
 }

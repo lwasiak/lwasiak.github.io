@@ -178,7 +178,7 @@ body {
         gl_Position = uPMatrix * uCamMatrix * vLightPosition;
 
         vShadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
-        vTextureCoord = 1.0 - aTextureCoord;
+        vTextureCoord = 10.0 - aTextureCoord;
     }
 </script>
 
@@ -849,9 +849,6 @@ body {
     var numberOfFrames = 0;
     var startTime = 0;
     var endTime = 0;
-    var framerateSum = 0;
-    var minFramerate = 99;
-    var maxFramerate = 0;
 
     function test() {
         switch(direction) {
@@ -994,7 +991,7 @@ body {
             case 11:
                 endTime = new Date().getTime();
                 showStats();
-                
+
                 direction = 1;
                 moveMode = 4;
                 speed = 0.0;
@@ -1012,13 +1009,12 @@ body {
     function showStats() {
         var n = "\n";
         var t = "  ";
+        var sec = (endTime - startTime) / 1000;
         alert("Done!"
                 +n+ "Framerate:"
                 +n+t+ "Number of frames: " + numberOfFrames
-                +n+t+ "Time: " + (endTime - startTime) / 1000 + "s"
-                +n+t+ "Average: " + (framerateSum / numberOfFrames).toFixed(3)
-                +n+t+ "Min: " + minFramerate.toFixed(3)
-                +n+t+ "Max: " + maxFramerate.toFixed(3)
+                +n+t+ "Time: " + sec.toFixed(2) + "s"
+                +n+t+ "Average: " + (numberOfFrames / sec).toFixed(2)
                 +n+n+ "Settings:"
                 +n+t+ "Batch grass: "        + batchGrass
                 +n+t+ "Grass density: "      + grassDensity
@@ -1070,7 +1066,6 @@ body {
     }
 
     var loaded = false;
-    var currentFramerate;
 
     function tick() {
         if (!loaded) {
@@ -1080,15 +1075,7 @@ body {
             redraw();
             animate();
 
-            currentFramerate = g_FPS.snapshot();
-
-            framerateSum += currentFramerate;
-            if (currentFramerate < minFramerate) {
-                minFramerate = currentFramerate;
-            }
-            if (currentFramerate > maxFramerate) {
-                maxFramerate = currentFramerate;
-            }
+            g_FPS.snapshot();
             numberOfFrames++;
 
             spanDrops.innerHTML = rainVertices.length / 6;

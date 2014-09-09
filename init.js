@@ -115,6 +115,9 @@ function initShaders() {
 
     gl.uniformMatrix4fv(shaderGrassProgram.pMatrixUniform, false, pSceneMatrix);
     gl.uniform2f(shaderGrassProgram.shadowMapResolutionUniform, 1.0 / (screenWidth * shadowMapQuality), 1.0 / (screenHeight * shadowMapQuality));
+
+    gl.deleteShader(vertexShader);
+    gl.deleteShader(fragmentShader);
     
 //----------------------------------------------------
 
@@ -154,6 +157,9 @@ function initShaders() {
 
     gl.uniformMatrix4fv(shaderGroundProgram.pMatrixUniform, false, pSceneMatrix);
     gl.uniform2f(shaderGroundProgram.shadowMapResolutionUniform, 1.0 / (screenWidth * shadowMapQuality), 1.0 / (screenHeight * shadowMapQuality));
+
+    gl.deleteShader(vertexShader);
+    gl.deleteShader(fragmentShader);
 
 //----------------------------------------------------
 
@@ -206,6 +212,9 @@ function initShaders() {
     gl.uniformMatrix4fv(shaderTreeProgram.pMatrixUniform, false, pSceneMatrix);
     gl.uniform2f(shaderTreeProgram.shadowMapResolutionUniform, 1.0 / (screenWidth * shadowMapQuality), 1.0 / (screenHeight * shadowMapQuality));
 
+    gl.deleteShader(vertexShader);
+    gl.deleteShader(fragmentShader);
+
 //----------------------------------------------------
 
     fragmentShader = getShader(gl, "fragSkybox");
@@ -232,6 +241,9 @@ function initShaders() {
 
     gl.uniformMatrix4fv(shaderSkyboxProgram.pMatrixUniform, false, pSceneMatrix);
 
+    gl.deleteShader(vertexShader);
+    gl.deleteShader(fragmentShader);
+
 //----------------------------------------------------
 
     fragmentShader = getShader(gl, "fragRain");
@@ -257,6 +269,9 @@ function initShaders() {
 
     gl.uniformMatrix4fv(shaderRainProgram.pMatrixUniform, false, pSceneMatrix);
 
+    gl.deleteShader(vertexShader);
+    gl.deleteShader(fragmentShader);
+
 //----------------------------------------------------
 
     fragmentShader = getShader(gl, "fragShadow");
@@ -281,6 +296,9 @@ function initShaders() {
     shaderShadowProgram.timeUniform = gl.getUniformLocation(shaderShadowProgram, "uTime");
     shaderShadowProgram.bendFactorUniform = gl.getUniformLocation(shaderShadowProgram, "uBendFactor");
     shaderShadowProgram.moveElementUniform = gl.getUniformLocation(shaderShadowProgram, "uMoveElement");
+
+    gl.deleteShader(vertexShader);
+    gl.deleteShader(fragmentShader);
 
 //----------------------------------------------------
 
@@ -308,6 +326,9 @@ function initShaders() {
     shaderDofProgram.bendFactorUniform = gl.getUniformLocation(shaderDofProgram, "uBendFactor");
     shaderDofProgram.moveElementUniform = gl.getUniformLocation(shaderDofProgram, "uMoveElement");
 
+    gl.deleteShader(vertexShader);
+    gl.deleteShader(fragmentShader);
+
 //----------------------------------------------------
 
     fragmentShader = getShader(gl, "fragHorizontalBlurDOF");
@@ -329,6 +350,9 @@ function initShaders() {
     shaderHorizontalBlurDOFProgram.useDOFUniform = gl.getUniformLocation(shaderHorizontalBlurDOFProgram, "uUseDOF");
     shaderHorizontalBlurDOFProgram.samplerUniform = gl.getUniformLocation(shaderHorizontalBlurDOFProgram, "uSampler");
     shaderHorizontalBlurDOFProgram.depthSamplerUniform = gl.getUniformLocation(shaderHorizontalBlurDOFProgram, "uDepthSampler");
+
+    gl.deleteShader(vertexShader);
+    gl.deleteShader(fragmentShader);
 
 //----------------------------------------------------
 
@@ -352,6 +376,9 @@ function initShaders() {
     shaderVerticalBlurDOFProgram.samplerUniform = gl.getUniformLocation(shaderVerticalBlurDOFProgram, "uSampler");
     shaderVerticalBlurDOFProgram.depthSamplerUniform = gl.getUniformLocation(shaderVerticalBlurDOFProgram, "uDepthSampler");
 
+    gl.deleteShader(vertexShader);
+    gl.deleteShader(fragmentShader);
+
 //----------------------------------------------------
 
     fragmentShader = getShader(gl, "fragRadialBlur");
@@ -373,6 +400,9 @@ function initShaders() {
     shaderRadialBlurProgram.samplerUniform = gl.getUniformLocation(shaderRadialBlurProgram, "uSampler");
     shaderRadialBlurProgram.speedUniform = gl.getUniformLocation(shaderRadialBlurProgram, "uSpeed");
     shaderRadialBlurProgram.useRadialUniform = gl.getUniformLocation(shaderRadialBlurProgram, "uUseRadial");
+
+    gl.deleteShader(vertexShader);
+    gl.deleteShader(fragmentShader);
 }
 
 var sceneFramebuffer;
