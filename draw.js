@@ -17,7 +17,6 @@ var terrainHeight = 20.0;
 var batchGrass = true;
 var grassBendFactor = 0.75;
 var grassDensity = 1.0;
-var moveGrass = true;
 
 var batchFlower  = [true, true];
 var flowerBendFactor = [0.5, 0.4];
@@ -32,14 +31,14 @@ var treeBendFactor = [10.0, 10.0, 10.0, 10.0, 10.0, 10.0];
 var wind = true;
 
 var rain = true;
-var rainDensity = 10000;
+var rainDensity = 25000;
 var rainDropsWidth = 3.0;
 var grayed = 0.0;
 var skybox = true;
 
 var radialBlur = true;
 
-var DOFQuality = 0.5;
+var DOFQuality = 1.0;
 var depthOfField = true;
 var dofSettings = [0.1, 0.3, 0.5];
 
@@ -114,7 +113,6 @@ function drawShadows() {
     //Ground
     mat4.identity(mvSceneMatrix);
 
-    mat4.identity(mvpMatrix);
     mat4.mul(mvpMatrix, camShadowMatrix, mvSceneMatrix);
     mat4.mul(mvpMatrix, pSceneMatrix, mvpMatrix);
     gl.uniformMatrix4fv(shaderShadowProgram.mvpMatrixUniform, false, mvpMatrix);
@@ -141,7 +139,6 @@ function drawShadows() {
     //Grass
     mat4.identity(mvSceneMatrix);
 
-    mat4.identity(mvpMatrix);
     mat4.mul(mvpMatrix, camShadowMatrix, mvSceneMatrix);
     mat4.mul(mvpMatrix, pSceneMatrix, mvpMatrix);
     gl.uniformMatrix4fv(shaderShadowProgram.mvpMatrixUniform, false, mvpMatrix);
@@ -167,7 +164,6 @@ function drawShadows() {
     for (var flowerType = 0; flowerType < flowerTypes; flowerType++) {
         mat4.identity(mvSceneMatrix);
 
-        mat4.identity(mvpMatrix);
         mat4.mul(mvpMatrix, camShadowMatrix, mvSceneMatrix);
         mat4.mul(mvpMatrix, pSceneMatrix, mvpMatrix);
         gl.uniformMatrix4fv(shaderShadowProgram.mvpMatrixUniform, false, mvpMatrix);
@@ -206,7 +202,6 @@ function drawShadows() {
         mat4.translate(mvSceneMatrix, mvSceneMatrix, [treeXPos[i], translateY / 255.0 * terrainHeight, treeZPos[i]]);
         mat4.scale(mvSceneMatrix, mvSceneMatrix, [treeScale[i], treeScale[i], treeScale[i]]);
 
-        mat4.identity(mvpMatrix);
         mat4.mul(mvpMatrix, camShadowMatrix, mvSceneMatrix);
         mat4.mul(mvpMatrix, pSceneMatrix, mvpMatrix);
         gl.uniformMatrix4fv(shaderShadowProgram.mvpMatrixUniform, false, mvpMatrix);
@@ -244,7 +239,6 @@ function drawDOF() {
     //Ground
     mat4.identity(mvSceneMatrix);
 
-    mat4.identity(mvpMatrix);
     mat4.mul(mvpMatrix, camSceneMatrix, mvSceneMatrix);
     mat4.mul(mvpMatrix, pSceneMatrix, mvpMatrix);
     gl.uniformMatrix4fv(shaderDofProgram.mvpMatrixUniform, false, mvpMatrix);
@@ -268,7 +262,6 @@ function drawDOF() {
     //Grass
     mat4.identity(mvSceneMatrix);
 
-    mat4.identity(mvpMatrix);
     mat4.mul(mvpMatrix, camSceneMatrix, mvSceneMatrix);
     mat4.mul(mvpMatrix, pSceneMatrix, mvpMatrix);
     gl.uniformMatrix4fv(shaderDofProgram.mvpMatrixUniform, false, mvpMatrix);
@@ -294,7 +287,6 @@ function drawDOF() {
     for (var flowerType = 0; flowerType < flowerTypes; flowerType++) {
         mat4.identity(mvSceneMatrix);
 
-        mat4.identity(mvpMatrix);
         mat4.mul(mvpMatrix, camSceneMatrix, mvSceneMatrix);
         mat4.mul(mvpMatrix, pSceneMatrix, mvpMatrix);
         gl.uniformMatrix4fv(shaderDofProgram.mvpMatrixUniform, false, mvpMatrix);
@@ -333,7 +325,6 @@ function drawDOF() {
         mat4.translate(mvSceneMatrix, mvSceneMatrix, [treeXPos[i], translateY / 255.0 * terrainHeight, treeZPos[i]]);
         mat4.scale(mvSceneMatrix, mvSceneMatrix, [treeScale[i], treeScale[i], treeScale[i]]);
 
-        mat4.identity(mvpMatrix);
         mat4.mul(mvpMatrix, camSceneMatrix, mvSceneMatrix);
         mat4.mul(mvpMatrix, pSceneMatrix, mvpMatrix);
         gl.uniformMatrix4fv(shaderDofProgram.mvpMatrixUniform, false, mvpMatrix);
