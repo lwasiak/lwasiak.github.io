@@ -16,7 +16,7 @@ var terrainHeight = 20.0;
 
 var batchGrass = true;
 var grassBendFactor = 0.75;
-var grassDensity = 10.0;
+var grassDensity = 5.0;
 
 var batchFlower  = [true, true];
 var flowerBendFactor = [0.5, 0.4];
