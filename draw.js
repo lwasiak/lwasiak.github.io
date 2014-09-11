@@ -34,9 +34,9 @@ var rain = false;
 var rainDensity = 250000;
 var rainDropsWidth = 3.0;
 var grayed = 0.0;
-var skybox = true;
+var skybox = false;
 
-var radialBlur = false;
+var radialBlur = true;
 
 var DOFQuality = 0.5;
 var depthOfField = false;
