@@ -30,11 +30,11 @@ var treeBendFactor = [10.0, 10.0, 10.0, 10.0, 10.0, 10.0];
 
 var wind = false;
 
-var rain = true;
+var rain = false;
 var rainDensity = 250000;
 var rainDropsWidth = 3.0;
 var grayed = 0.0;
-var skybox = false;
+var skybox = true;
 
 var radialBlur = false;
 
