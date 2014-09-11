@@ -1,7 +1,7 @@
 var mouseDown = false;
 var lastMouseX = null;
 var lastMouseY = null;
-var currentlyPressedKeys = {};
+var currentlyPressedKeys = [];
 
 function handleKeyDown(event) {
     currentlyPressedKeys[event.keyCode] = true;
