@@ -38,7 +38,7 @@ var skybox = false;
 
 var radialBlur = false;
 
-var DOFQuality = 1.0;
+var DOFQuality = 2.0;
 var depthOfField = true;
 var dofSettings = [0.1, 0.3, 0.5];
 
