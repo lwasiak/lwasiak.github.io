@@ -36,10 +36,10 @@ var rainDropsWidth = 3.0;
 var grayed = 0.0;
 var skybox = false;
 
-var radialBlur = true;
+var radialBlur = false;
 
 var DOFQuality = 0.5;
-var depthOfField = false;
+var depthOfField = true;
 var dofSettings = [0.1, 0.3, 0.5];
 
 var shadowMapQuality = 1.0;
