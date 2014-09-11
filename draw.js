@@ -16,11 +16,11 @@ var terrainHeight = 20.0;
 
 var batchGrass = true;
 var grassBendFactor = 0.75;
-var grassDensity = 10.0;
+var grassDensity = 1.0;
 
 var batchFlower  = [true, true];
 var flowerBendFactor = [0.5, 0.4];
-var flowerDensity = [10.0, 10.0];
+var flowerDensity = [1.0, 1.0];
 
 var numberOfTrees = 0;
 var treeScale = [0.25, 0.2, 0.25, 0.27, 0.25, 0.22];
