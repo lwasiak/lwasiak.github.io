@@ -696,7 +696,7 @@ function initBuffers() {
     sceneVertexPositionBuffer.numItems = 6;
 
     seed = 1;
-    for (var i = 0; i < 40000; i++) {
+    for (var i = 0; i < 100000; i++) {
         randomTranslations[i] = randomFloat(0.0, 1.0);
     }
 
