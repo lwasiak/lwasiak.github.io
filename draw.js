@@ -31,7 +31,7 @@ var treeBendFactor = [10.0, 10.0, 10.0, 10.0, 10.0, 10.0];
 var wind = false;
 
 var rain = true;
-var rainDensity = 10000;
+var rainDensity = 12000;
 var rainDropsWidth = 3.0;
 var grayed = 0.0;
 var skybox = false;
@@ -131,7 +131,7 @@ function drawShadows() {
     gl.vertexAttribPointer(shaderShadowProgram.textureCoordAttribute, terrainTextureCoordsBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, terrainIndicesBuffer);
-    //gl.drawElements(gl.TRIANGLES, terrainIndicesBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+    gl.drawElements(gl.TRIANGLES, terrainIndicesBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 
     //Grass
     mat4.identity(mvSceneMatrix);
@@ -154,7 +154,7 @@ function drawShadows() {
         gl.vertexAttribPointer(shaderShadowProgram.vertexPositionAttribute, 3, gl.FLOAT, gl.FALSE, 8 * 4, 0);
         gl.vertexAttribPointer(shaderShadowProgram.textureCoordAttribute, 2, gl.FLOAT, gl.FALSE, 8 * 4, 6 * 4);
 
-        //gl.drawElements(gl.TRIANGLES, grassBatchedIndicesBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+        gl.drawElements(gl.TRIANGLES, grassBatchedIndicesBuffer.numItems, gl.UNSIGNED_SHORT, 0);
     }
 
     //Flower
@@ -178,7 +178,7 @@ function drawShadows() {
             gl.vertexAttribPointer(shaderShadowProgram.vertexPositionAttribute, 3, gl.FLOAT, gl.FALSE, 8 * 4, 0);
             gl.vertexAttribPointer(shaderShadowProgram.textureCoordAttribute, 2, gl.FLOAT, gl.FALSE, 8 * 4, 6 * 4);
 
-            //gl.drawElements(gl.TRIANGLES, flowerBatchedIndicesBuffer[flowerType].numItems, gl.UNSIGNED_SHORT, 0);
+            gl.drawElements(gl.TRIANGLES, flowerBatchedIndicesBuffer[flowerType].numItems, gl.UNSIGNED_SHORT, 0);
         }     
     }
 
@@ -206,7 +206,7 @@ function drawShadows() {
         gl.uniform1f(shaderShadowProgram.bendFactorUniform, treeBendFactor[i]);
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, treeIndicesBuffer[i]);
-        //gl.drawElements(gl.TRIANGLES, treeIndicesBuffer[i].numItems, gl.UNSIGNED_SHORT, 0);        
+        gl.drawElements(gl.TRIANGLES, treeIndicesBuffer[i].numItems, gl.UNSIGNED_SHORT, 0);        
     }
 
     gl.activeTexture(gl.TEXTURE0);
@@ -372,11 +372,11 @@ function drawGround() {
 
     gl.uniform1i(shaderGroundProgram.useShadowsUniform, false);
     gl.uniform1i(shaderGroundProgram.useSoftShadowsUniform, false);
-
+/*
     gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_2D, shadowTexture);
     gl.uniform1i(shaderGroundProgram.shadowSamplerUniform, 2);
-
+*/
     gl.activeTexture(gl.TEXTURE3);
     gl.bindTexture(gl.TEXTURE_2D, bumpMapTexture);
     gl.uniform1i(shaderGroundProgram.normalMapSamplerUniform, 3);
@@ -427,11 +427,11 @@ function drawGrass() {
 
     gl.uniform1i(shaderGrassProgram.useShadowsUniform, false);
     gl.uniform1i(shaderGrassProgram.useSoftShadowsUniform, false);
-
+/*
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, shadowTexture);
     gl.uniform1i(shaderGrassProgram.shadowSamplerUniform, 1);
-    
+*/
     if (vertexTextureUnits != 0) {
         gl.uniform1f(shaderGrassProgram.useWindUniform, wind);
     
@@ -610,11 +610,11 @@ function drawTree() {
 
     gl.uniform1i(shaderTreeProgram.useShadowsUniform, false);
     gl.uniform1i(shaderTreeProgram.useSoftShadowsUniform, false);
-
+/*
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, shadowTexture);
     gl.uniform1i(shaderTreeProgram.shadowSamplerUniform, 1);
-    
+*/
     if (vertexTextureUnits != 0) {
         gl.uniform1f(shaderTreeProgram.useWindUniform, wind);
     
