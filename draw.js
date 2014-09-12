@@ -39,11 +39,11 @@ var skybox = false;
 var radialBlur = false;
 
 var DOFQuality = 0.5;
-var depthOfField = true;
+var depthOfField = false;
 var dofSettings = [0.1, 0.3, 0.5];
 
 var shadowMapQuality = 0.5;
-var shadows = false;
+var shadows = true;
 var softShadows = false;
 
 var lighting = false;
