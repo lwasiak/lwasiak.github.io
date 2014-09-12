@@ -373,8 +373,8 @@ function drawGround() {
 
     gl.uniform1f(shaderGroundProgram.rainDensityUniform, grayed);
 
-    gl.uniform1i(shaderGroundProgram.useShadowsUniform, shadows);
-    gl.uniform1i(shaderGroundProgram.useSoftShadowsUniform, softShadows);
+    gl.uniform1i(shaderGroundProgram.useShadowsUniform, false);
+    gl.uniform1i(shaderGroundProgram.useSoftShadowsUniform, false);
 
     gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_2D, shadowTexture);
@@ -428,8 +428,8 @@ function drawGrass() {
 
     gl.uniform1f(shaderGrassProgram.rainDensityUniform, grayed);
 
-    gl.uniform1i(shaderGrassProgram.useShadowsUniform, shadows);
-    gl.uniform1i(shaderGrassProgram.useSoftShadowsUniform, softShadows);
+    gl.uniform1i(shaderGrassProgram.useShadowsUniform, false);
+    gl.uniform1i(shaderGrassProgram.useSoftShadowsUniform, false);
 
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, shadowTexture);
@@ -611,8 +611,8 @@ function drawTree() {
 
     gl.uniform1f(shaderTreeProgram.rainDensityUniform, grayed);
 
-    gl.uniform1i(shaderTreeProgram.useShadowsUniform, shadows);
-    gl.uniform1i(shaderTreeProgram.useSoftShadowsUniform, softShadows);
+    gl.uniform1i(shaderTreeProgram.useShadowsUniform, false);
+    gl.uniform1i(shaderTreeProgram.useSoftShadowsUniform, false);
 
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, shadowTexture);
