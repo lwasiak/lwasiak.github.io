@@ -31,7 +31,7 @@ var treeBendFactor = [10.0, 10.0, 10.0, 10.0, 10.0, 10.0];
 var wind = false;
 
 var rain = true;
-var rainDensity = 25000;
+var rainDensity = 20000;
 var rainDropsWidth = 3.0;
 var grayed = 0.0;
 var skybox = false;
@@ -43,7 +43,7 @@ var depthOfField = false;
 var dofSettings = [0.1, 0.3, 0.5];
 
 var shadowMapQuality = 0.5;
-var shadows = false;
+var shadows = true;
 var softShadows = false;
 
 var lighting = false;
