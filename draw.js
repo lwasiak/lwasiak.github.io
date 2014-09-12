@@ -31,7 +31,7 @@ var treeBendFactor = [10.0, 10.0, 10.0, 10.0, 10.0, 10.0];
 var wind = false;
 
 var rain = true;
-var rainDensity = 12000;
+var rainDensity = 15000;
 var rainDropsWidth = 3.0;
 var grayed = 0.0;
 var skybox = false;
@@ -43,7 +43,7 @@ var depthOfField = false;
 var dofSettings = [0.1, 0.3, 0.5];
 
 var shadowMapQuality = 0.5;
-var shadows = true;
+var shadows = false;
 var softShadows = false;
 
 var lighting = false;
@@ -132,6 +132,9 @@ function drawShadows() {
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, terrainIndicesBuffer);
     gl.drawElements(gl.TRIANGLES, terrainIndicesBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, null);
 
     //Grass
     mat4.identity(mvSceneMatrix);
@@ -370,13 +373,13 @@ function drawGround() {
 
     gl.uniform1f(shaderGroundProgram.rainDensityUniform, grayed);
 
-    gl.uniform1i(shaderGroundProgram.useShadowsUniform, false);
-    gl.uniform1i(shaderGroundProgram.useSoftShadowsUniform, false);
-/*
+    gl.uniform1i(shaderGroundProgram.useShadowsUniform, shadows);
+    gl.uniform1i(shaderGroundProgram.useSoftShadowsUniform, softShadows);
+
     gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_2D, shadowTexture);
     gl.uniform1i(shaderGroundProgram.shadowSamplerUniform, 2);
-*/
+
     gl.activeTexture(gl.TEXTURE3);
     gl.bindTexture(gl.TEXTURE_2D, bumpMapTexture);
     gl.uniform1i(shaderGroundProgram.normalMapSamplerUniform, 3);
@@ -425,13 +428,13 @@ function drawGrass() {
 
     gl.uniform1f(shaderGrassProgram.rainDensityUniform, grayed);
 
-    gl.uniform1i(shaderGrassProgram.useShadowsUniform, false);
-    gl.uniform1i(shaderGrassProgram.useSoftShadowsUniform, false);
-/*
+    gl.uniform1i(shaderGrassProgram.useShadowsUniform, shadows);
+    gl.uniform1i(shaderGrassProgram.useSoftShadowsUniform, softShadows);
+
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, shadowTexture);
     gl.uniform1i(shaderGrassProgram.shadowSamplerUniform, 1);
-*/
+    
     if (vertexTextureUnits != 0) {
         gl.uniform1f(shaderGrassProgram.useWindUniform, wind);
     
@@ -608,13 +611,13 @@ function drawTree() {
 
     gl.uniform1f(shaderTreeProgram.rainDensityUniform, grayed);
 
-    gl.uniform1i(shaderTreeProgram.useShadowsUniform, false);
-    gl.uniform1i(shaderTreeProgram.useSoftShadowsUniform, false);
-/*
+    gl.uniform1i(shaderTreeProgram.useShadowsUniform, shadows);
+    gl.uniform1i(shaderTreeProgram.useSoftShadowsUniform, softShadows);
+
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, shadowTexture);
     gl.uniform1i(shaderTreeProgram.shadowSamplerUniform, 1);
-*/
+    
     if (vertexTextureUnits != 0) {
         gl.uniform1f(shaderTreeProgram.useWindUniform, wind);
     
