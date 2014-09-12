@@ -43,7 +43,7 @@ var depthOfField = false;
 var dofSettings = [0.1, 0.3, 0.5];
 
 var shadowMapQuality = 0.5;
-var shadows = true;
+var shadows = false;
 var softShadows = false;
 
 var lighting = false;
