@@ -237,7 +237,7 @@ body {
                 visibility = 1.0 - 0.5 * (sum / 9.0);
             } else {
                 float distanceFromLight = texture2D(uShadowSampler, shadowCoord).z;
-                float bias = 0.01;
+                float bias = 0.02;
                 if (vShadowPosition.w > 0.0 && shadow > distanceFromLight + bias) {
                     visibility = 0.5;
                 }
