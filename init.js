@@ -4,7 +4,6 @@ function initGL(canvas) {
         gl = canvas.getContext("experimental-webgl");
         gl.viewportWidth = canvas.width;
         gl.viewportHeight = canvas.height;
-        gl.getExtension("OES_standard_derivatives");
     } catch (e) {
     }
     if (!gl) {
@@ -570,7 +569,7 @@ function initTextures() {
     }
 
     var treeTexturesDirs = ["assets/tree4.png", "assets/tree1.png", "assets/tree2.png", "assets/tree3.png", "assets/tree5.png", "assets/tree6.png"];
-    for (var i = 0; i < numberOfTrees; i++) {
+    for (var i = 0; i < 6; i++) {
         treeTextures[i] = gl.createTexture();
         treeTextures[i].image = new Image();
         treeTextures[i].image.onload = function(i) {
@@ -939,7 +938,7 @@ var treeVertexPositionBuffer = [];
 var treeIndicesBuffer = [];
 
 function initTree() {
-    for (var i = 0; i < numberOfTrees; i++) {
+    for (var i = 0; i < 6; i++) {
         treeVertexPositionBuffer[i] = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, treeVertexPositionBuffer[i]);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(treeVertices[i]), gl.STATIC_DRAW);

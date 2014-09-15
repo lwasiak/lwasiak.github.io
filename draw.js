@@ -14,15 +14,15 @@ var shadowZPos = 40.0;
 
 var terrainHeight = 20.0;
 
-var batchGrass = true;
+var batchGrass = false;
 var grassBendFactor = 0.75;
-var grassDensity = 2.0;
+var grassDensity = 5.0;
 
 var batchFlower  = [true, true];
 var flowerBendFactor = [0.5, 0.4];
 var flowerDensity = [5.3, 4.7];
 
-var numberOfTrees = 6;
+var numberOfTrees = 0;
 var treeScale = [0.25, 0.2, 0.25, 0.27, 0.25, 0.22];
 var treeXPos = [45.0, 20.0, 80.0, 30.0, 40.0, 90.0];
 var treeZPos = [-30.0, -60.0, -60.0, -90.0, -95.0, -10.0];
