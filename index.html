@@ -38,7 +38,10 @@ body {
     varying vec2 vTextureCoord;
     varying vec3 vTransformedNormal;
     varying vec4 vLightPosition;
-    varying vec4 vShadowPosition;
+    varying vec2 vShadowCoord;
+    varying float vShadowDistance;
+    
+    const vec2 v2 = vec2(0.5, 0.5);
 
     void main(void) {
         if (uUseWind && aTextureCoord.y > 0.1) {
@@ -53,7 +56,16 @@ body {
         }
 
         gl_Position = uPMatrix * uCamMatrix * vLightPosition;
-        vShadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
+
+        vec4 shadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
+        vec4 shadowCoordinateWdivide = shadowPosition / shadowPosition.w;
+        vShadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
+        if (vShadowCoord.x < 0.0 || vShadowCoord.x > 1.0 || vShadowCoord.y < 0.0 || vShadowCoord.y > 1.0) {
+           vShadowDistance = 100.0;
+        } else {
+           vShadowDistance = shadowPosition.z * 0.005;
+        }  
+
         vTextureCoord = 1.0 - aTextureCoord;
         vTransformedNormal = uNMatrix * aVertexNormal;
     }
@@ -73,12 +85,24 @@ body {
     varying vec2 vTextureCoord;
     varying vec3 vTransformedNormal;
     varying vec4 vLightPosition;
-    varying vec4 vShadowPosition;
+    varying vec2 vShadowCoord;
+    varying float vShadowDistance;
+    
+    const vec2 v2 = vec2(0.5, 0.5);
 
     void main(void) {
 		vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
         gl_Position = uPMatrix * uCamMatrix * vLightPosition;
-        vShadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
+
+        vec4 shadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
+        vec4 shadowCoordinateWdivide = shadowPosition / shadowPosition.w;
+        vShadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
+        if (vShadowCoord.x < 0.0 || vShadowCoord.x > 1.0 || vShadowCoord.y < 0.0 || vShadowCoord.y > 1.0) {
+           vShadowDistance = 100.0;
+        } else {
+           vShadowDistance = shadowPosition.z * 0.005;
+        } 
+
         vTextureCoord = 1.0 - aTextureCoord;
         vTransformedNormal = uNMatrix * aVertexNormal;
     }
@@ -101,9 +125,9 @@ body {
     varying vec2 vTextureCoord;
     varying vec3 vTransformedNormal;
     varying vec4 vLightPosition;
-    varying vec4 vShadowPosition;
+    varying vec2 vShadowCoord;
+    varying float vShadowDistance;
 
-    const vec2 v2 = vec2(0.5, 0.5);
     const vec3 grey = vec3(0.2, 0.2, 0.2);
 
     void main(void) {
@@ -122,27 +146,23 @@ body {
         }
 
         float visibility = 1.0;
-        if (uUseShadows) {
-            float shadow = vShadowPosition.z * 0.005;
-            vec4 shadowCoordinateWdivide = vShadowPosition / vShadowPosition.w;
-            vec2 shadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
+        if (uUseShadows && vShadowDistance < 1.0) {
+            const float bias = 0.003;
 
             if (uUseSoftShadows) {
                 float sum = 0.0;
                 for (float i = -1.0; i < 1.1; i++) {
                     for (float j = -1.0; j < 1.1; j++) {
-                        float distanceFromLight = texture2D(uShadowSampler, vec2(shadowCoord.x + (j * uShadowMapResolution.x), shadowCoord.y + (i * uShadowMapResolution.y))).z;
-                        float bias = 0.003;
-                        if (shadow > distanceFromLight + bias) {
+                        float distanceFromLight = texture2D(uShadowSampler, vec2(vShadowCoord.x + (j * uShadowMapResolution.x), vShadowCoord.y + (i * uShadowMapResolution.y))).z;
+                        if (vShadowDistance > distanceFromLight + bias) {
                             sum += 1.0;
                         }
                     }
                 }
                 visibility = 1.0 - 0.5 * (sum / 9.0);
             } else {
-                float distanceFromLight = texture2D(uShadowSampler, shadowCoord).z;
-                float bias = 0.003;
-                if (vShadowPosition.w > 0.0 && shadow > distanceFromLight + bias) {
+                float distanceFromLight = texture2D(uShadowSampler, vShadowCoord).z;
+                if (vShadowDistance > distanceFromLight + bias) {
                     visibility = 0.5;
                 }
             }
@@ -170,13 +190,24 @@ body {
 
     varying vec2 vTextureCoord;
     varying vec4 vLightPosition;
-    varying vec4 vShadowPosition;
+    varying vec2 vShadowCoord;
+    varying float vShadowDistance;
+    
+    const vec2 v2 = vec2(0.5, 0.5);
 
     void main(void) {
         vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
         gl_Position = uPMatrix * uCamMatrix * vLightPosition;
 
-        vShadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
+        vec4 shadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
+        vec4 shadowCoordinateWdivide = shadowPosition / shadowPosition.w;
+        vShadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
+        if (vShadowCoord.x < 0.0 || vShadowCoord.x > 1.0 || vShadowCoord.y < 0.0 || vShadowCoord.y > 1.0) {
+           vShadowDistance = 100.0;
+        } else {
+           vShadowDistance = shadowPosition.z * 0.005;
+        }    
+    
         vTextureCoord = 10.0 - aTextureCoord;
     }
 </script>
@@ -199,9 +230,9 @@ body {
 
     varying vec2 vTextureCoord;
     varying vec4 vLightPosition;
-    varying vec4 vShadowPosition;
+    varying vec2 vShadowCoord;
+    varying float vShadowDistance;
 
-    const vec2 v2 = vec2(0.5, 0.5);
     const vec3 grey = vec3(0.2, 0.2, 0.2);
 
     void main(void) {
@@ -218,27 +249,23 @@ body {
         }
 
         float visibility = 1.0;
-        if (uUseShadows) {
-            float shadow = vShadowPosition.z * 0.005;
-            vec4 shadowCoordinateWdivide = vShadowPosition / vShadowPosition.w;
-            vec2 shadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
+        if (uUseShadows && vShadowDistance < 1.0) {
+            const float bias = 0.003;
 
             if (uUseSoftShadows) {
                 float sum = 0.0;
                 for (float i = -1.0; i < 1.1; i++) {
                     for (float j = -1.0; j < 1.1; j++) {
-                        float distanceFromLight = texture2D(uShadowSampler, vec2(shadowCoord.x + (j * uShadowMapResolution.x), shadowCoord.y + (i * uShadowMapResolution.y))).z;
-                        float bias = 0.003;
-                        if (shadow > distanceFromLight + bias) {
+                        float distanceFromLight = texture2D(uShadowSampler, vec2(vShadowCoord.x + (j * uShadowMapResolution.x), vShadowCoord.y + (i * uShadowMapResolution.y))).z;
+                        if (vShadowDistance > distanceFromLight + bias) {
                             sum += 1.0;
                         }
                     }
                 }
                 visibility = 1.0 - 0.5 * (sum / 9.0);
             } else {
-                float distanceFromLight = texture2D(uShadowSampler, shadowCoord).z;
-                float bias = 0.003;
-                if (vShadowPosition.w > 0.0 && shadow > distanceFromLight + bias) {
+                float distanceFromLight = texture2D(uShadowSampler, vShadowCoord).z;
+                if (vShadowDistance > distanceFromLight + bias) {
                     visibility = 0.5;
                 }
             }
@@ -281,7 +308,10 @@ body {
     varying vec2 vTextureCoord;
     varying vec3 vTransformedNormal;
     varying vec4 vLightPosition;
-    varying vec4 vShadowPosition;
+    varying vec2 vShadowCoord;
+    varying float vShadowDistance;
+    
+    const vec2 v2 = vec2(0.5, 0.5);
 
     void main(void) {
         if (uUseWind && aTextureCoord.y > 0.75) {
@@ -296,7 +326,16 @@ body {
         }
 
         gl_Position = uPMatrix * uCamMatrix * vLightPosition;
-        vShadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
+
+        vec4 shadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
+        vec4 shadowCoordinateWdivide = shadowPosition / shadowPosition.w;
+        vShadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
+        if (vShadowCoord.x < 0.0 || vShadowCoord.x > 1.0 || vShadowCoord.y < 0.0 || vShadowCoord.y > 1.0) {
+           vShadowDistance = 100.0;
+        } else {
+           vShadowDistance = shadowPosition.z * 0.005;
+        } 
+
         vTextureCoord = 1.0 - aTextureCoord;
         vTransformedNormal = uNMatrix * aVertexNormal;
     }
@@ -316,12 +355,24 @@ body {
     varying vec2 vTextureCoord;
     varying vec3 vTransformedNormal;
     varying vec4 vLightPosition;
-    varying vec4 vShadowPosition;
+    varying vec2 vShadowCoord;
+    varying float vShadowDistance;
+    
+    const vec2 v2 = vec2(0.5, 0.5);
 
     void main(void) {
 		vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
         gl_Position = uPMatrix * uCamMatrix * vLightPosition;
-        vShadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
+
+        vec4 shadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
+        vec4 shadowCoordinateWdivide = shadowPosition / shadowPosition.w;
+        vShadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
+        if (vShadowCoord.x < 0.0 || vShadowCoord.x > 1.0 || vShadowCoord.y < 0.0 || vShadowCoord.y > 1.0) {
+           vShadowDistance = 100.0;
+        } else {
+           vShadowDistance = shadowPosition.z * 0.005;
+        } 
+
         vTextureCoord = 1.0 - aTextureCoord;
         vTransformedNormal = uNMatrix * aVertexNormal;
     }
@@ -344,9 +395,9 @@ body {
     varying vec2 vTextureCoord;
     varying vec3 vTransformedNormal;
     varying vec4 vLightPosition;
-    varying vec4 vShadowPosition;
-
-    const vec2 v2 = vec2(0.5, 0.5);
+    varying vec2 vShadowCoord;
+    varying float vShadowDistance;
+    
     const vec3 grey = vec3(0.2, 0.2, 0.2);
 
     void main(void) {
@@ -365,27 +416,23 @@ body {
         }
 
         float visibility = 1.0;
-        if (uUseShadows) {
-            float shadow = vShadowPosition.z * 0.005;
-            vec4 shadowCoordinateWdivide = vShadowPosition / vShadowPosition.w;
-            vec2 shadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
+        if (uUseShadows && vShadowDistance < 1.0) {
+            const float bias = 0.003;
 
             if (uUseSoftShadows) {
                 float sum = 0.0;
                 for (float i = -1.0; i < 1.1; i++) {
                     for (float j = -1.0; j < 1.1; j++) {
-                        float distanceFromLight = texture2D(uShadowSampler, vec2(shadowCoord.x + (j * uShadowMapResolution.x), shadowCoord.y + (i * uShadowMapResolution.y))).z;
-                        float bias = 0.01;
-                        if (shadow > distanceFromLight + bias) {
+                        float distanceFromLight = texture2D(uShadowSampler, vec2(vShadowCoord.x + (j * uShadowMapResolution.x), vShadowCoord.y + (i * uShadowMapResolution.y))).z;
+                        if (vShadowDistance > distanceFromLight + bias) {
                             sum += 1.0;
                         }
                     }
                 }
                 visibility = 1.0 - 0.5 * (sum / 9.0);
             } else {
-                float distanceFromLight = texture2D(uShadowSampler, shadowCoord).z;
-                float bias = 0.01;
-                if (vShadowPosition.w > 0.0 && shadow > distanceFromLight + bias) {
+                float distanceFromLight = texture2D(uShadowSampler, vShadowCoord).z;
+                if (vShadowDistance > distanceFromLight + bias) {
                     visibility = 0.5;
                 }
             }
@@ -1010,6 +1057,40 @@ body {
                 +n+t+ "Number of frames: " + numberOfFrames
                 +n+t+ "Time: " + sec.toFixed(2) + "s"
                 +n+t+ "Average: " + (numberOfFrames / sec).toFixed(2)
+                +n+n+ "Settings:"
+                +n+t+ "Batch grass: "        + batchGrass
+                +n+t+ "Grass density: "      + grassDensity
+                +n+t+ "Batch red flowers: "        + batchFlower[0]
+                +n+t+ "Red flowers density: "      + flowerDensity[0]
+                +n+t+ "Batch blue flowers: "        + batchFlower[1]
+                +n+t+ "Blue flowers density: "      + flowerDensity[1]
+                +n+t+ "Number of trees: "      + numberOfTrees
+				+n+t+ "Wind: "                 + wind
+                +n+t+ "Rain: "                 + rain
+                +n+t+t+ "Rain density: "     + rainDensity
+                +n+t+ "Render skybox: "      + skybox
+                +n+t+ "Use radial blur: "    + radialBlur
+                +n+t+ "Use depth of field: " + depthOfField
+                +n+t+t+ "Depth of field settings:"
+                +n+t+t+t+ "Near: "   + dofSettings[0]
+                +n+t+t+t+ "Middle: " + dofSettings[1]
+                +n+t+t+t+ "Far: "    + dofSettings[2]
+                +n+t+ "Use shadows: " + shadows
+                +n+t+t+ "Use soft shadows: " + softShadows
+                +n+t+ "Use lighting: " + lighting
+                +n+t+t+ "Light settings:"
+                +n+t+t+t+ "Point light position:"
+                +n+t+t+t+t+ "X: " + lightLocation[0]
+                +n+t+t+t+t+ "Y: " + lightLocation[1]
+                +n+t+t+t+t+ "Z: " + lightLocation[2]
+                +n+t+t+t+ "Point light color:"
+                +n+t+t+t+t+ "R: " + pointLightColor[0]
+                +n+t+t+t+t+ "G: " + pointLightColor[1]
+                +n+t+t+t+t+ "B: " + pointLightColor[2]
+                +n+t+t+t+ "Ambient light color:"
+                +n+t+t+t+t+ "R: " + ambientColor[0]
+                +n+t+t+t+t+ "G: " + ambientColor[1]
+                +n+t+t+t+t+ "B: " + ambientColor[2]
         );
     }
 
