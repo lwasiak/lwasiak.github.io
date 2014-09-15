@@ -4,6 +4,7 @@ function initGL(canvas) {
         gl = canvas.getContext("experimental-webgl");
         gl.viewportWidth = canvas.width;
         gl.viewportHeight = canvas.height;
+        gl.getExtension("OES_standard_derivatives");
     } catch (e) {
     }
     if (!gl) {

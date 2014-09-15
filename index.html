@@ -109,6 +109,7 @@ body {
 </script>
 
 <script id="fragGrass" type="x-shader/x-fragment">
+    #extension GL_OES_standard_derivatives:enable
     precision mediump float;
 
     uniform sampler2D uSampler;
@@ -131,6 +132,9 @@ body {
     const vec3 grey = vec3(0.2, 0.2, 0.2);
 
     void main(void) {
+        float depth = 1.0;
+        float dx = dFdx(depth);
+
         vec4 textureColor = texture2D(uSampler, vTextureCoord);
         if (textureColor.a < 0.75) {
             discard;
