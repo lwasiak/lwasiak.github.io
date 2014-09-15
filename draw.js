@@ -109,7 +109,7 @@ function drawShadows() {
 
     gl.enableVertexAttribArray(shaderShadowProgram.vertexPositionAttribute);
     gl.enableVertexAttribArray(shaderShadowProgram.textureCoordAttribute);
-
+/*
     //Ground
     mat4.identity(mvSceneMatrix);
 
@@ -132,7 +132,7 @@ function drawShadows() {
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, terrainIndicesBuffer);
     gl.drawElements(gl.TRIANGLES, terrainIndicesBuffer.numItems, gl.UNSIGNED_SHORT, 0);
-
+*/
     //Grass
     mat4.identity(mvSceneMatrix);
 
