@@ -46,7 +46,7 @@ var shadowMapQuality = 1.0;
 var shadows = true;
 var softShadows = true;
 
-var lighting = false;
+var lighting = true;
 var lightLocation = [10.0, 30.0, 20.0];
 var pointLightColor = [0.8, 0.8, 0.8];
 var ambientColor = [0.4, 0.4, 0.4];
