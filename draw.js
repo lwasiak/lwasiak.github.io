@@ -16,11 +16,11 @@ var terrainHeight = 20.0;
 
 var batchGrass = true;
 var grassBendFactor = 0.75;
-var grassDensity = 5.0;
+var grassDensity = 2.5;
 
 var batchFlower  = [true, true];
 var flowerBendFactor = [0.5, 0.4];
-var flowerDensity = [10.0, 10.0];
+var flowerDensity = [5.3, 4.7];
 
 var numberOfTrees = 6;
 var treeScale = [0.25, 0.2, 0.25, 0.27, 0.25, 0.22];
@@ -30,20 +30,20 @@ var treeBendFactor = [10.0, 10.0, 10.0, 10.0, 10.0, 10.0];
 
 var wind = true;
 
-var rain = false;
+var rain = true;
 var rainDensity = 10000;
 var rainDropsWidth = 3.0;
 var grayed = 0.0;
 var skybox = true;
 
-var radialBlur = false;
+var radialBlur = true;
 
-var DOFQuality = 1.0;
-var depthOfField = false;
+var DOFQuality = 0.5;
+var depthOfField = true;
 var dofSettings = [0.1, 0.3, 0.5];
 
-var shadowMapQuality = 1.0;
-var shadows = false;
+var shadowMapQuality = 0.5;
+var shadows = true;
 var softShadows = false;
 
 var lighting = true;
