@@ -1148,6 +1148,9 @@ body {
         gl.enable(gl.DEPTH_TEST);
         gl.depthFunc(gl.LEQUAL);
 
+        var available_extensions = gl.getSupportedExtensions();
+        alert(available_extensions);
+
         canvas.onmousedown   = handleMouseDown;
         document.onmouseup   = handleMouseUp;
         document.onmousemove = handleMouseMove;
