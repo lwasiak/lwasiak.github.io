@@ -475,11 +475,11 @@ function initFramebuffers() {
 
     shadowFramebuffer = gl.createFramebuffer();
     shadowTexture = gl.createTexture();
-    attachTextureToFBO(shadowFramebuffer, shadowTexture, screenWidth * shadowMapQuality, screenHeight * shadowMapQuality, gl.RGBA);
+    attachTextureToFBO(shadowFramebuffer, shadowTexture, screenWidth * shadowMapQuality, screenHeight * shadowMapQuality, gl.RGB);
 
     dofFramebuffer = gl.createFramebuffer();
     dofTexture = gl.createTexture();
-    attachTextureToFBO(dofFramebuffer, dofTexture, screenWidth * DOFQuality, screenHeight * DOFQuality, gl.RGBA);
+    attachTextureToFBO(dofFramebuffer, dofTexture, screenWidth * DOFQuality, screenHeight * DOFQuality, gl.RGB);
 
     blurHorizontalSceneFramebuffer = gl.createFramebuffer();
     blurHorizontalSceneTexture = gl.createTexture();
