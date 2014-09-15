@@ -16,11 +16,11 @@ var terrainHeight = 20.0;
 
 var batchGrass = false;
 var grassBendFactor = 0.75;
-var grassDensity = 5.0;
+var grassDensity = 2.0;
 
 var batchFlower  = [true, true];
 var flowerBendFactor = [0.5, 0.4];
-var flowerDensity = [5.3, 4.7];
+var flowerDensity = [10.0, 10.0];
 
 var numberOfTrees = 0;
 var treeScale = [0.25, 0.2, 0.25, 0.27, 0.25, 0.22];
@@ -44,7 +44,7 @@ var dofSettings = [0.1, 0.3, 0.5];
 
 var shadowMapQuality = 1.0;
 var shadows = true;
-var softShadows = false;
+var softShadows = true;
 
 var lighting = true;
 var lightLocation = [10.0, 30.0, 20.0];
