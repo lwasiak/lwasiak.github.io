@@ -109,7 +109,7 @@ body {
 </script>
 
 <script id="fragGrass" type="x-shader/x-fragment">
-    precision mediump float;
+    precision highp float;
 
     uniform sampler2D uSampler;
     uniform sampler2D uShadowSampler;
@@ -213,7 +213,7 @@ body {
 </script>
 
 <script id="fragGround" type="x-shader/x-fragment">
-    precision mediump float;
+    precision highp float;
 
     uniform sampler2D uGroundASampler;
     uniform sampler2D uGroundBSampler;
@@ -379,7 +379,7 @@ body {
 </script>
 
 <script id="fragTree" type="x-shader/x-fragment">
-    precision mediump float;
+    precision highp float;
 
     uniform sampler2D uSampler;
     uniform sampler2D uShadowSampler;
@@ -468,7 +468,7 @@ body {
 </script>
 
 <script id="fragSkybox" type="x-shader/x-fragment">
-    precision mediump float;
+    precision highp float;
 
     uniform samplerCube uSampler;
     uniform float uRainDensity;
@@ -502,7 +502,7 @@ body {
 </script>
 
 <script id="fragRain" type="x-shader/x-fragment">
-    precision mediump float;
+    precision highp float;
 
     varying float vAlpha;
 
@@ -542,7 +542,7 @@ body {
 </script>
 
 <script id="fragShadow" type="x-shader/x-fragment">
-    precision mediump float;
+    precision highp float;
 
     uniform sampler2D uSampler;
 
@@ -591,7 +591,7 @@ body {
 </script>
 
 <script id="fragDof" type="x-shader/x-fragment">
-    precision mediump float;
+    precision highp float;
 
     uniform sampler2D uSampler;
     uniform vec3 uDoFSettings;
@@ -642,7 +642,7 @@ body {
 </script>
 
 <script id="fragHorizontalBlurDOF" type="x-shader/x-fragment">
-    precision mediump float;
+    precision highp float;
 
     uniform sampler2D uSampler;
     uniform sampler2D uDepthSampler;
@@ -676,7 +676,7 @@ body {
 
 
 <script id="fragVerticalBlurDOF" type="x-shader/x-fragment">
-    precision mediump float;
+    precision highp float;
 
     uniform sampler2D uSampler;
     uniform sampler2D uDepthSampler;
@@ -709,7 +709,7 @@ body {
 </script>
 
 <script id="fragRadialBlur" type="x-shader/x-fragment">
-    precision mediump float;
+    precision highp float;
 
     uniform sampler2D uSampler;
     uniform float uSpeed;
