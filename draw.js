@@ -1,8 +1,8 @@
-var camRotateVertical = 0.0;
-var camRotateHorizontal = 55.0;
-var camXPos = 5.0;
-var camYPos = 20.0;
-var camZPos = -15.0;
+var camRotateVertical = 35.0;
+var camRotateHorizontal = 45.0;
+var camXPos = 0.0;
+var camYPos = 60.0;
+var camZPos = 0.0;
 var camHeight = 1.0;
 var moveMode = 4;
 
@@ -16,11 +16,11 @@ var terrainHeight = 20.0;
 
 var batchGrass = true;
 var grassBendFactor = 0.75;
-var grassDensity = 1.0;
+var grassDensity = 5.0;
 
 var batchFlower  = [true, true];
 var flowerBendFactor = [0.5, 0.4];
-var flowerDensity = [5.3, 4.7];
+var flowerDensity = [10.0, 10.0];
 
 var numberOfTrees = 6;
 var treeScale = [0.25, 0.2, 0.25, 0.27, 0.25, 0.22];
@@ -30,23 +30,23 @@ var treeBendFactor = [10.0, 10.0, 10.0, 10.0, 10.0, 10.0];
 
 var wind = true;
 
-var rain = true;
+var rain = false;
 var rainDensity = 10000;
 var rainDropsWidth = 3.0;
 var grayed = 0.0;
 var skybox = true;
 
-var radialBlur = true;
+var radialBlur = false;
 
 var DOFQuality = 0.5;
-var depthOfField = true;
+var depthOfField = false;
 var dofSettings = [0.1, 0.3, 0.5];
 
 var shadowMapQuality = 1.0;
 var shadows = true;
 var softShadows = true;
 
-var lighting = true;
+var lighting = false;
 var lightLocation = [10.0, 30.0, 20.0];
 var pointLightColor = [0.8, 0.8, 0.8];
 var ambientColor = [0.4, 0.4, 0.4];
