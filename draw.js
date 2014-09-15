@@ -16,37 +16,37 @@ var terrainHeight = 20.0;
 
 var batchGrass = true;
 var grassBendFactor = 0.75;
-var grassDensity = 2.8;
+var grassDensity = 1.0;
 
 var batchFlower  = [true, true];
 var flowerBendFactor = [0.5, 0.4];
-var flowerDensity = [2.8, 2.8];
+var flowerDensity = [5.3, 4.7];
 
-var numberOfTrees = 0;
+var numberOfTrees = 6;
 var treeScale = [0.25, 0.2, 0.25, 0.27, 0.25, 0.22];
 var treeXPos = [45.0, 20.0, 80.0, 30.0, 40.0, 90.0];
 var treeZPos = [-30.0, -60.0, -60.0, -90.0, -95.0, -10.0];
 var treeBendFactor = [10.0, 10.0, 10.0, 10.0, 10.0, 10.0];
 
-var wind = false;
+var wind = true;
 
-var rain = false;
+var rain = true;
 var rainDensity = 10000;
 var rainDropsWidth = 3.0;
 var grayed = 0.0;
-var skybox = false;
+var skybox = true;
 
-var radialBlur = false;
+var radialBlur = true;
 
 var DOFQuality = 0.5;
-var depthOfField = false;
+var depthOfField = true;
 var dofSettings = [0.1, 0.3, 0.5];
 
-var shadowMapQuality = 2.0;
+var shadowMapQuality = 1.0;
 var shadows = true;
-var softShadows = false;
+var softShadows = true;
 
-var lighting = false;
+var lighting = true;
 var lightLocation = [10.0, 30.0, 20.0];
 var pointLightColor = [0.8, 0.8, 0.8];
 var ambientColor = [0.4, 0.4, 0.4];
@@ -132,9 +132,6 @@ function drawShadows() {
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, terrainIndicesBuffer);
     gl.drawElements(gl.TRIANGLES, terrainIndicesBuffer.numItems, gl.UNSIGNED_SHORT, 0);
-
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, null);
 
     //Grass
     mat4.identity(mvSceneMatrix);
@@ -681,6 +678,35 @@ function drawTree() {
     gl.disableVertexAttribArray(shaderTreeProgram.textureCoordAttribute);
 }
 
+function drawSkybox() {
+    gl.useProgram(shaderSkyboxProgram);
+
+    gl.uniformMatrix4fv(shaderSkyboxProgram.camMatrixUniform, false, camSceneMatrix);
+
+    gl.uniform1f(shaderSkyboxProgram.rainDensityUniform, grayed);
+
+    gl.enableVertexAttribArray(shaderSkyboxProgram.vertexPositionAttribute);
+
+    mat4.identity(mvSceneMatrix);
+    mat4.translate(mvSceneMatrix, mvSceneMatrix, [camXPos, camYPos, camZPos]);
+
+    gl.uniformMatrix4fv(shaderSkyboxProgram.mvMatrixUniform, false, mvSceneMatrix);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, skyboxVertexPositionBuffer);
+    gl.vertexAttribPointer(shaderSkyboxProgram.vertexPositionAttribute, skyboxVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, skyboxTexture);
+    gl.uniform1i(shaderSkyboxProgram.samplerUniform, 0);
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, skyboxIndicesBuffer);
+    gl.drawElements(gl.TRIANGLES, skyboxIndicesBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+    gl.disableVertexAttribArray(shaderSkyboxProgram.vertexPositionAttribute);
+}
+
 function drawRain() {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
@@ -714,39 +740,11 @@ function drawRain() {
     gl.disable(gl.BLEND);
 }
 
-function drawSkybox() {
-    gl.useProgram(shaderSkyboxProgram);
-
-    gl.uniformMatrix4fv(shaderSkyboxProgram.camMatrixUniform, false, camSceneMatrix);
-
-    gl.uniform1f(shaderSkyboxProgram.rainDensityUniform, grayed);
-
-    gl.enableVertexAttribArray(shaderSkyboxProgram.vertexPositionAttribute);
-
-    mat4.identity(mvSceneMatrix);
-    mat4.translate(mvSceneMatrix, mvSceneMatrix, [camXPos, camYPos, camZPos]);
-
-    gl.uniformMatrix4fv(shaderSkyboxProgram.mvMatrixUniform, false, mvSceneMatrix);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, skyboxVertexPositionBuffer);
-    gl.vertexAttribPointer(shaderSkyboxProgram.vertexPositionAttribute, skyboxVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_CUBE_MAP, skyboxTexture);
-    gl.uniform1i(shaderSkyboxProgram.samplerUniform, 0);
-
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, skyboxIndicesBuffer);
-    gl.drawElements(gl.TRIANGLES, skyboxIndicesBuffer.numItems, gl.UNSIGNED_SHORT, 0);
-
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
-    gl.disableVertexAttribArray(shaderSkyboxProgram.vertexPositionAttribute);
-}
-
 function drawSceneFramebuffer() {
     gl.disable(gl.DEPTH_TEST);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    
     var textureToDraw = sceneTexture;
     if (depthOfField) {
         gl.bindFramebuffer(gl.FRAMEBUFFER, blurHorizontalSceneFramebuffer);
@@ -837,6 +835,7 @@ function drawSceneFramebuffer() {
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, null);
     gl.disableVertexAttribArray(shaderRadialBlurProgram.vertexPositionAttribute);
+
     gl.disable(gl.BLEND);
     gl.enable(gl.DEPTH_TEST);
 }
