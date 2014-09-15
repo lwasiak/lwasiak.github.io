@@ -2,8 +2,7 @@ var seed = 1;
 function randomFloat(begin, range) {
     var x = Math.cos(++seed) * 10000;
     x -= Math.floor(x);
-
-    return (x * range + begin);
+    return ((x + begin) * range);
 }
 
 function degToRad(degrees) {
@@ -89,6 +88,28 @@ function getPixelAvg(imageData, x, z) {
     return (colorXA + colorXB + colorZA + colorZB) / 2.0;
 }
 
+function checkFramebuffer(id) {
+    var status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+    switch (status) {
+        case gl.FRAMEBUFFER_COMPLETE:
+            break;
+        case gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+            alert(id + ": FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
+            break;
+        case gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+            alert(id + ": FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
+            break;
+        case gl.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
+            alert(id + ": FRAMEBUFFER_INCOMPLETE_DIMENSIONS");
+            break;
+        case gl.FRAMEBUFFER_UNSUPPORTED:
+            alert(id + ": FRAMEBUFFER_UNSUPPORTED");
+            break;
+        default:
+            alert(id + ": Incomplete framebuffer: " + status);
+    }
+}
+
 //
 // Framerate object
 //
@@ -119,8 +140,8 @@ Framerate.prototype.updateFramerate = function()
 
     var framerate = tot / this.framerates.length;
     framerate = Math.round(framerate);
-    document.getElementById(this.id).innerHTML = "Framerate: " + framerate + "fps";
-    document.getElementById("frameTime").innerHTML = "Frame time: " + self.frameTime + "ms";
+    document.getElementById(this.id).innerHTML = "Framerate: "+framerate+"fps";
+    document.getElementById("frameTime").innerHTML = "Frame time: "+self.frameTime+"ms";
 }
 
 Framerate.prototype.snapshot = function()
@@ -138,19 +159,7 @@ Framerate.prototype.snapshot = function()
         while (this.framerates.length > this.numFramerates)
             this.framerates.shift();
         this.renderTime = newTime;
+
+        return framerate;
     }
 }
-
-/**
- * Provides requestAnimationFrame in a cross browser way.
- */
-window.requestAnimFrame = (function() {
-  return window.requestAnimationFrame ||
-         window.webkitRequestAnimationFrame ||
-         window.mozRequestAnimationFrame ||
-         window.oRequestAnimationFrame ||
-         window.msRequestAnimationFrame ||
-         function(/* function FrameRequestCallback */ callback, /* DOMElement Element */ element) {
-           window.setTimeout(callback, 1000/60);
-         };
-})();

@@ -1,7 +1,7 @@
 var mouseDown = false;
 var lastMouseX = null;
 var lastMouseY = null;
-var currentlyPressedKeys = [];
+var currentlyPressedKeys = {};
 
 function handleKeyDown(event) {
     currentlyPressedKeys[event.keyCode] = true;
@@ -84,66 +84,22 @@ function handleKeys() {
     }
 }
 
-var softShadowsPrevState = true;
-function setInputValues() {
-    document.getElementById("batchGrass").checked = batchGrass;
+var batchGrass   = true;
+var batchFlower  = [true, true];
+var skybox       = true;
+var radialBlur   = true;
+var depthOfField = true;
+var shadows      = true;
+var softShadows  = true;
+var lighting     = true;
 
-    var grassDensitySlider = document.getElementById("grassDensity");
-    grassDensitySlider.value = grassDensitySlider.max - grassDensity + 1.0;
-
-    document.getElementById("batchFlowerRed").checked = batchFlower[0];
-    var flowerRedDensitySlider = document.getElementById("flowerRedDensity");
-    flowerRedDensitySlider.value = flowerRedDensitySlider.max - flowerDensity[0] + 1.0;
-
-    document.getElementById("batchFlowerBlue").checked = batchFlower[1];
-    var flowerBlueDensitySlider = document.getElementById("flowerBlueDensity");
-    flowerBlueDensitySlider.value = flowerBlueDensitySlider.max - flowerDensity[1] + 1.0;
-
-    document.getElementById("numberOfTrees").value = numberOfTrees;
-	
-	document.getElementById("wind").checked = wind;
-	
-    document.getElementById("rain").checked = rain;
-    var rainDensitySlider = document.getElementById("rainDensity");
-    rainDensitySlider.value = rainDensity;
-
-    document.getElementById("skybox").checked = skybox;
-
-    document.getElementById("radialBlur").checked = radialBlur;
-
-    document.getElementById("depthOfField").checked = depthOfField;
-    document.getElementById("near").value = dofSettings[0];
-    document.getElementById("middle").value = dofSettings[1];
-    document.getElementById("far").value = dofSettings[2];
-
-    document.getElementById("shadows").checked = shadows;
-    var softShadowsCheckbox = document.getElementById("softShadows");
-    if (shadows) {
-        softShadowsCheckbox.disabled = false;
-        softShadowsCheckbox.checked = softShadows;
-    } else {
-        softShadowsCheckbox.disabled = true;
-        softShadowsPrevState = softShadows;
-        softShadowsCheckbox.checked = false;
-    }
-
-    document.getElementById("lighting").checked = lighting;
-
-    document.getElementById("lightLocationX").value = lightLocation[0];
-    document.getElementById("lightLocationY").value = lightLocation[1];
-    document.getElementById("lightLocationZ").value = lightLocation[2];
-
-    document.getElementById("lightR").value = pointLightColor[0];
-    document.getElementById("lightG").value = pointLightColor[1];
-    document.getElementById("lightB").value = pointLightColor[2];
-
-    document.getElementById("ambientR").value = ambientColor[0];
-    document.getElementById("ambientG").value = ambientColor[1];
-    document.getElementById("ambientB").value = ambientColor[2];
-}
+var dofSettings = [0.1, 0.3, 0.5];
+var ambientColor = [0.4, 0.4, 0.4];
+var lightLocation = [10.0, 30.0, 20.0];
+var pointLightColor = [0.8, 0.8, 0.8];
 
 function moveGrassSlider(s) {
-    grassDensity = s.max - parseFloat(s.value) + 1.0;
+    grassDensity = parseFloat(s.value);
     countGrassClusterBuffers();
 }
 
@@ -153,7 +109,7 @@ function cbBatchGrass(s) {
 }
 
 function moveFlowerRedSlider(s) {
-    flowerDensity[0] = s.max - parseFloat(s.value) + 1.0;
+    flowerDensity[0] = parseFloat(s.value);
     countFlowerClusterBuffers(0);
 }
 
@@ -163,7 +119,7 @@ function cbBatchFlowerRed(s) {
 }
 
 function moveFlowerBlueSlider(s) {
-    flowerDensity[1] = s.max - parseFloat(s.value) + 1.0;
+    flowerDensity[1] = parseFloat(s.value);
     countFlowerClusterBuffers(1);
 }
 
@@ -181,23 +137,6 @@ function numTrees(s) {
     }
     numberOfTrees = number;
     s.value = number;
-}
-
-function cbWind(s) {
-    wind = !wind;
-    s.checked = wind;
-	totalTime = 0.0;
-}
-
-function cbRain(s) {
-    rain = !rain;
-    s.checked = rain;
-    resetRain();
-}
-
-function moveRainSlider(s) {
-    rainDensity = parseFloat(s.value);
-    resetRain();
 }
 
 function cbSkybox(s) {
@@ -227,16 +166,17 @@ function tbDOFF(s) {
     dofSettings[2] = parseFloat(s.value);
 }
 
+var prevState = true;
 function cbShadows(s) {
     shadows = !shadows;
     s.checked = shadows;
     var softShadows = document.getElementById("softShadows");
     if (shadows) {
         softShadows.disabled = false;
-        softShadows.checked = softShadowsPrevState;
+        softShadows.checked = prevState;
     } else {
         softShadows.disabled = true;
-        softShadowsPrevState = softShadows.checked;
+        prevState = softShadows.checked;
         softShadows.checked = false;
     }
 }
