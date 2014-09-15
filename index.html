@@ -228,7 +228,7 @@ body {
                 for (float i = -1.0; i < 1.1; i++) {
                     for (float j = -1.0; j < 1.1; j++) {
                         float distanceFromLight = texture2D(uShadowSampler, vec2(shadowCoord.x + (j * uShadowMapResolution.x), shadowCoord.y + (i * uShadowMapResolution.y))).z;
-                        float bias = 0.003;
+                        float bias = 0.01;
                         if (shadow > distanceFromLight + bias) {
                             sum += 1.0;
                         }
@@ -237,7 +237,7 @@ body {
                 visibility = 1.0 - 0.5 * (sum / 9.0);
             } else {
                 float distanceFromLight = texture2D(uShadowSampler, shadowCoord).z;
-                float bias = 0.003;
+                float bias = 0.01;
                 if (vShadowPosition.w > 0.0 && shadow > distanceFromLight + bias) {
                     visibility = 0.5;
                 }
