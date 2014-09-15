@@ -825,7 +825,7 @@ function drawSceneFramebuffer() {
     gl.uniform1f(shaderRadialBlurProgram.speedUniform, speed);
 
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, textureToDraw);
+    gl.bindTexture(gl.TEXTURE_2D, shadowTexture);
     gl.uniform1i(shaderRadialBlurProgram.samplerUniform, 0);
 
     gl.drawArrays(gl.TRIANGLES, 0, sceneVertexPositionBuffer.numItems);
