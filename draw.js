@@ -43,10 +43,10 @@ var depthOfField = false;
 var dofSettings = [0.1, 0.3, 0.5];
 
 var shadowMapQuality = 1.0;
-var shadows = true;
+var shadows = false;
 var softShadows = false;
 
-var lighting = false;
+var lighting = true;
 var lightLocation = [10.0, 30.0, 20.0];
 var pointLightColor = [0.8, 0.8, 0.8];
 var ambientColor = [0.4, 0.4, 0.4];
