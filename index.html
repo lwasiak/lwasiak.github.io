@@ -19,32 +19,39 @@ body {
 <script type="text/javascript" src="draw.js"></script>
 
 <script id="vertGrass" type="x-shader/x-vertex">
+/**
+    Vertex shader used to draw grass objects if vertex texture sampling is available.
+*/
+
     attribute vec3 aVertexPosition;
     attribute vec3 aVertexNormal;
     attribute vec2 aTextureCoord;
 
-    uniform mat4 uMVMatrix;
-    uniform mat4 uCamMatrix;
-    uniform mat4 uPMatrix;
-    uniform mat3 uNMatrix;
-    uniform mat4 uShadowCamMatrix;
+    uniform mat4 uMVMatrix;             /**< Model view matrix */
+    uniform mat4 uCamMatrix;            /**< Eye camera position matrix */
+    uniform mat4 uPMatrix;              /**< Perspective matrix */
+    uniform mat3 uNMatrix;              /**< Normal matrix */
+    uniform mat4 uShadowCamMatrix;      /**< Shadow camera position matrix */
     
-    uniform bool uUseWind;
-    uniform float uTime;
-    uniform float uBendFactor;
-    uniform sampler2D uWindXSampler;
-    uniform sampler2D uWindZSampler;
+    uniform bool uUseWind;              /**< Move grass objects to simulate the wind */
+    uniform float uTime;                /**< Time passed */
+    uniform float uBendFactor;          /**< Max bend of grass caused by wind */
+    uniform sampler2D uWindXSampler;    /**< Texture to define bend in X direction caused by wind */
+    uniform sampler2D uWindZSampler;    /**< Texture to define bend in Z direction caused by wind */
 
     varying vec2 vTextureCoord;
-    varying vec3 vTransformedNormal;
-    varying vec4 vLightPosition;
-    varying vec2 vShadowCoord;
-    varying float vShadowDistance;
+    varying vec3 vTransformedNormal;    /**< Normal vector in space */
+    varying vec4 vLightPosition;        /**< Position of point light from current vertex */
+    varying vec2 vShadowCoord;          /**< Coordinates used to sample shadow map */
+    varying float vShadowDistance;      /**< Distance from shadow camera to current object */
     
-    const vec2 v2 = vec2(0.5, 0.5);
+    const vec2 v2 = vec2(0.5, 0.5);     /**< Vector used to count shadow texture coordinates */
 
     void main(void) {
         if (uUseWind && aTextureCoord.y > 0.1) {
+            /**
+                Count position of upper vertices after applying wind effect
+            */
             float xBend = (texture2D(uWindXSampler, vec2((aVertexPosition.x + 0.5) / 128.0 + uTime, 1.0 - (-(aVertexPosition.z - 0.5) / 128.0))).r) - 0.5;
             xBend *= uBendFactor;
             float zBend = (texture2D(uWindZSampler, vec2((aVertexPosition.x + 0.5) / 128.0, 1.0 - (-(aVertexPosition.z - 0.5) / 128.0) - uTime)).r) - 0.5;
@@ -57,85 +64,116 @@ body {
 
         gl_Position = uPMatrix * uCamMatrix * vLightPosition;
 
+        /**
+            Count distance from shadow camera to vertex and coordinate to sample shadow map.
+            If vertex is not visible on shadow map set max distance.
+        */
         vec4 shadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
         vec4 shadowCoordinateWdivide = shadowPosition / shadowPosition.w;
         vShadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
         if (vShadowCoord.x < 0.0 || vShadowCoord.x > 1.0 || vShadowCoord.y < 0.0 || vShadowCoord.y > 1.0) {
-           vShadowDistance = 100.0;
+            vShadowDistance = 100.0;
         } else {
-           vShadowDistance = shadowPosition.z * 0.005;
-        }   
+            vShadowDistance = shadowPosition.z * 0.005;
+        }
 
+        /**
+            Flip the texture in Y axis
+        */
         vTextureCoord = 1.0 - aTextureCoord;
+
         vTransformedNormal = uNMatrix * aVertexNormal;
     }
 </script>
 
 <script id="vertGrassNoSampler" type="x-shader/x-vertex">
+/**
+    Vertex shader used to draw grass objects if vertex texture sampling is NOT available.
+*/
+
     attribute vec3 aVertexPosition;
     attribute vec3 aVertexNormal;
     attribute vec2 aTextureCoord;
 
-    uniform mat4 uMVMatrix;
-    uniform mat4 uCamMatrix;
-    uniform mat4 uPMatrix;
-    uniform mat3 uNMatrix;
-    uniform mat4 uShadowCamMatrix;
+    uniform mat4 uMVMatrix;             /**< Model view matrix */
+    uniform mat4 uCamMatrix;            /**< Eye camera position matrix */
+    uniform mat4 uPMatrix;              /**< Perspective matrix */
+    uniform mat3 uNMatrix;              /**< Normal matrix */
+    uniform mat4 uShadowCamMatrix;      /**< Shadow camera position matrix */
 
     varying vec2 vTextureCoord;
-    varying vec3 vTransformedNormal;
-    varying vec4 vLightPosition;
-    varying vec2 vShadowCoord;
-    varying float vShadowDistance;
+    varying vec3 vTransformedNormal;    /**< Normal vector in space */
+    varying vec4 vLightPosition;        /**< Position of point light from current vertex */
+    varying vec2 vShadowCoord;          /**< Coordinates used to sample shadow map */
+    varying float vShadowDistance;      /**< Distance from shadow camera to current object */
     
-    const vec2 v2 = vec2(0.5, 0.5);
+    const vec2 v2 = vec2(0.5, 0.5);     /**< Vector used to count shadow texture coordinates */
 
     void main(void) {
         vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
         gl_Position = uPMatrix * uCamMatrix * vLightPosition;
 
+        /**
+            Count distance from shadow camera to vertex and coordinate to sample shadow map.
+            If vertex is not visible on shadow map set max distance.
+        */
         vec4 shadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
         vec4 shadowCoordinateWdivide = shadowPosition / shadowPosition.w;
         vShadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
         if (vShadowCoord.x < 0.0 || vShadowCoord.x > 1.0 || vShadowCoord.y < 0.0 || vShadowCoord.y > 1.0) {
-           vShadowDistance = 100.0;
+            vShadowDistance = 100.0;
         } else {
-           vShadowDistance = shadowPosition.z * 0.005;
-        }   
+            vShadowDistance = shadowPosition.z * 0.005;
+        }
 
+        /**
+            Flip the texture in Y axis
+        */
         vTextureCoord = 1.0 - aTextureCoord;
+
         vTransformedNormal = uNMatrix * aVertexNormal;
     }
 </script>
 
 <script id="fragGrass" type="x-shader/x-fragment">
+/**
+    Fragment shader used to draw grass objects
+*/
+
     precision mediump float;
 
-    uniform sampler2D uSampler;
-    uniform sampler2D uShadowSampler;
-    uniform float uRainDensity;
-    uniform bool uUseShadows;
-    uniform bool uUseSoftShadows;
-    uniform vec2 uShadowMapResolution;
-    uniform bool uUseLighting;
-    uniform vec3 uAmbientColor;
-    uniform vec3 uPointLightLocation;
-    uniform vec3 uPointLightColor;
+    uniform sampler2D uSampler;             /**< Texture to apply on the object */
+    uniform sampler2D uShadowSampler;       /**< Shadow map sampler */
+    uniform float uRainDensity;             /**< Intensivity of rain */
+    uniform bool uUseShadows;               /**< Apply shadows to the object */
+    uniform bool uUseSoftShadows;           /**< Apply PCF shadows to the object */
+    uniform vec2 uShadowMapResolution;      /**< Size of shadow map */
+    uniform bool uUseLighting;              /**< Apply lighting to the object */
+    uniform vec3 uAmbientColor;             /**< RGB color of ambient light */
+    uniform vec3 uPointLightLocation;       /**< Position of point light in space */
+    uniform vec3 uPointLightColor;          /**< RGB color of point light */
 
     varying vec2 vTextureCoord;
-    varying vec3 vTransformedNormal;
-    varying vec4 vLightPosition;
-    varying vec2 vShadowCoord;
-    varying float vShadowDistance;
+    varying vec3 vTransformedNormal;        /**< Normal vector in space */
+    varying vec4 vLightPosition;            /**< Position of point light from current vertex */
+    varying vec2 vShadowCoord;              /**< Coordinates used to sample shadow map */
+    varying float vShadowDistance;          /**< Distance from shadow camera to current object */
 
-    const vec3 grey = vec3(0.2, 0.2, 0.2);
+    const vec3 grey = vec3(0.2, 0.2, 0.2);  /**< Gray color in RGB used when it's raining */
 
     void main(void) {
+        /**
+            Sample the texture.
+            If current pixel is transparent don't draw it.
+        */
         vec4 textureColor = texture2D(uSampler, vTextureCoord);
         if (textureColor.a < 0.75) {
             discard;
         }
 
+        /**
+            Count color added by lights
+        */
         vec3 lightWeighting;
         if (!uUseLighting) {
             lightWeighting = vec3(1.0, 1.0, 1.0);
@@ -145,11 +183,19 @@ body {
             lightWeighting = uAmbientColor + uPointLightColor * directionalLightWeighting;
         }
 
+        /**
+            Sample the shadow map and check if there is any occluder between current fragment and light
+        */
         float visibility = 1.0;
         if (uUseShadows && vShadowDistance < 1.0) {
             const float bias = 0.003;
 
             if (uUseSoftShadows) {
+                /**
+                    Sample the current pixel and 8 pixels around it.
+                    Check if current fragment is fully or only partialy hidden from light.
+                    Creates penumbra zone on the edge of the shadow.
+                */
                 float sum = 0.0;
                 for (float i = -1.0; i < 1.1; i++) {
                     for (float j = -1.0; j < 1.1; j++) {
@@ -161,6 +207,9 @@ body {
                 }
                 visibility = 1.0 - 0.5 * (sum / 9.0);
             } else {
+                /**
+                    Sample only one pixel and check if fragment is hidden.
+                */
                 float distanceFromLight = texture2D(uShadowSampler, vShadowCoord).z;
                 if (vShadowDistance > distanceFromLight + bias) {
                     visibility = 0.5;
@@ -170,6 +219,9 @@ body {
 
         gl_FragColor = vec4(textureColor.rgb * lightWeighting * visibility, textureColor.a);
 
+        /**
+            When it's raining mix the counted color with gray
+        */
         if (uRainDensity > 0.05) {
             vec3 grayed = mix(gl_FragColor.rgb, grey, uRainDensity * 0.5);
             gl_FragColor = vec4(grayed, textureColor.a);
@@ -180,62 +232,80 @@ body {
 <!-- ____________________________________________________________ -->
 
 <script id="vertGround" type="x-shader/x-vertex">
+/**
+    Fragment shader used to draw ground
+*/
+
     attribute vec3 aVertexPosition;
     attribute vec2 aTextureCoord;
 
-    uniform mat4 uMVMatrix;
-    uniform mat4 uCamMatrix;
-    uniform mat4 uPMatrix;
-    uniform mat4 uShadowCamMatrix;
+    uniform mat4 uMVMatrix;             /**< Model view matrix */
+    uniform mat4 uCamMatrix;            /**< Eye camera position matrix */
+    uniform mat4 uPMatrix;              /**< Perspective matrix */
+    uniform mat4 uShadowCamMatrix;      /**< Shadow camera position matrix */
 
     varying vec2 vTextureCoord;
-    varying vec4 vLightPosition;
-    varying vec2 vShadowCoord;
-    varying float vShadowDistance;
+    varying vec4 vLightPosition;        /**< Position of point light from current vertex */
+    varying vec2 vShadowCoord;          /**< Coordinates used to sample shadow map */
+    varying float vShadowDistance;      /**< Distance from shadow camera to current object */
+
     
-    const vec2 v2 = vec2(0.5, 0.5);
+    const vec2 v2 = vec2(0.5, 0.5);     /**< Vector used to count shadow texture coordinates */
 
     void main(void) {
         vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
         gl_Position = uPMatrix * uCamMatrix * vLightPosition;
 
+        /**
+            Count distance from shadow camera to vertex and coordinate to sample shadow map.
+            If vertex is not visible on shadow map set max distance.
+        */
         vec4 shadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
         vec4 shadowCoordinateWdivide = shadowPosition / shadowPosition.w;
         vShadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
         if (vShadowCoord.x < 0.0 || vShadowCoord.x > 1.0 || vShadowCoord.y < 0.0 || vShadowCoord.y > 1.0) {
-           vShadowDistance = 100.0;
+            vShadowDistance = 100.0;
         } else {
-           vShadowDistance = shadowPosition.z * 0.005;
-        }    
+            vShadowDistance = shadowPosition.z * 0.005;
+        }
     
+        /**
+            Flip the texture in Y axis
+        */
         vTextureCoord = 10.0 - aTextureCoord;
     }
 </script>
 
 <script id="fragGround" type="x-shader/x-fragment">
+/**
+    Fragment shader used to draw grass objects
+*/
     precision mediump float;
 
-    uniform sampler2D uGroundASampler;
-    uniform sampler2D uGroundBSampler;
-    uniform sampler2D uShadowSampler;
-    uniform sampler2D uNormalMapSampler;
-    uniform float uRainDensity;
-    uniform bool uUseShadows;
-    uniform bool uUseSoftShadows;
-    uniform vec2 uShadowMapResolution;
-    uniform bool uUseLighting;
-    uniform vec3 uAmbientColor;
-    uniform vec3 uPointLightLocation;
-    uniform vec3 uPointLightColor;
+    uniform sampler2D uGroundASampler;      /**< 1st texture to apply on the object */
+    uniform sampler2D uGroundBSampler;      /**< 2nd texture to apply on the object */
+    uniform sampler2D uShadowSampler;       /**< Shadow map sampler */
+    uniform sampler2D uNormalMapSampler;    /**< Normal map sampler */
+    uniform float uRainDensity;             /**< Intensivity of rain */
+    uniform bool uUseShadows;               /**< Apply shadows to the object */
+    uniform bool uUseSoftShadows;           /**< Apply PCF shadows to the object */
+    uniform vec2 uShadowMapResolution;      /**< Size of shadow map */
+    uniform bool uUseLighting;              /**< Apply lighting to the object */
+    uniform vec3 uAmbientColor;             /**< RGB color of ambient light */
+    uniform vec3 uPointLightLocation;       /**< Position of point light in space */
+    uniform vec3 uPointLightColor;          /**< RGB color of point light */
 
     varying vec2 vTextureCoord;
-    varying vec4 vLightPosition;
-    varying vec2 vShadowCoord;
-    varying float vShadowDistance;
+    varying vec4 vLightPosition;            /**< Position of point light from current vertex */
+    varying vec2 vShadowCoord;              /**< Coordinates used to sample shadow map */
+    varying float vShadowDistance;          /**< Distance from shadow camera to current object */
 
-    const vec3 grey = vec3(0.2, 0.2, 0.2);
+    const vec3 grey = vec3(0.2, 0.2, 0.2);  /**< Gray color in RGB used when it's raining */
 
     void main(void) {
+        /**
+            Count color added by lights
+        */
         vec3 lightWeighting;
         if (!uUseLighting) {
             lightWeighting = vec3(1.0, 1.0, 1.0);
@@ -248,11 +318,19 @@ body {
             lightWeighting = uAmbientColor + uPointLightColor * diffuse;
         }
 
+        /**
+            Sample the shadow map and check if there is any occluder between current fragment and light
+        */
         float visibility = 1.0;
         if (uUseShadows && vShadowDistance < 1.0) {
             const float bias = 0.003;
 
             if (uUseSoftShadows) {
+                /**
+                    Sample the current pixel and 8 pixels around it.
+                    Check if current fragment is fully or only partialy hidden from light.
+                    Creates penumbra zone on the edge of the shadow.
+                */
                 float sum = 0.0;
                 for (float i = -1.0; i < 1.1; i++) {
                     for (float j = -1.0; j < 1.1; j++) {
@@ -264,6 +342,9 @@ body {
                 }
                 visibility = 1.0 - 0.5 * (sum / 9.0);
             } else {
+                /**
+                    Sample only one pixel and check if fragment is hidden.
+                */
                 float distanceFromLight = texture2D(uShadowSampler, vShadowCoord).z;
                 if (vShadowDistance > distanceFromLight + bias) {
                     visibility = 0.5;
@@ -271,13 +352,19 @@ body {
             }
         }
 
+        /**
+            Sample and mix two textures applied to the ground
+        */
         vec4 colorA = texture2D(uGroundASampler, vTextureCoord);
         vec2 coord = vTextureCoord / 2.2;
         vec4 colorB = texture2D(uGroundBSampler, coord);
-
         vec4 textureColor = colorA * 0.6 + colorB * 0.4;
+
         gl_FragColor = vec4(textureColor.rgb * lightWeighting * visibility, textureColor.a);
 
+        /**
+            When it's raining mix the counted color with gray
+        */
         if (uRainDensity > 0.05) {
             vec3 grayed = mix(gl_FragColor.rgb, grey, uRainDensity * 0.5);
             gl_FragColor = vec4(grayed, textureColor.a);
@@ -288,33 +375,40 @@ body {
 <!-- ____________________________________________________________ -->
 
 <script id="vertTree" type="x-shader/x-vertex">
+/**
+    Vertex shader used to draw tress if vertex texture sampling is available.
+*/
+
     attribute vec3 aVertexPosition;
     attribute vec3 aVertexNormal;
     attribute vec2 aTextureCoord;
 
-    uniform mat4 uMVMatrix;
-    uniform mat4 uCamMatrix;
-    uniform mat4 uPMatrix;
-    uniform mat3 uNMatrix;
-    uniform mat4 uShadowCamMatrix;
-    
-    uniform bool uUseWind;
-    uniform float uTime;
-    uniform float uBendFactor;
-    uniform vec2 uTreeCenter;
-    uniform sampler2D uWindXSampler;
-    uniform sampler2D uWindZSampler;
+    uniform mat4 uMVMatrix;             /**< Model view matrix */
+    uniform mat4 uCamMatrix;            /**< Eye camera position matrix */
+    uniform mat4 uPMatrix;              /**< Perspective matrix */
+    uniform mat3 uNMatrix;              /**< Normal matrix */
+    uniform mat4 uShadowCamMatrix;      /**< Shadow camera position matrix */
+
+    uniform bool uUseWind;              /**< Move grass objects to simulate the wind */
+    uniform float uTime;                /**< Time passed */
+    uniform float uBendFactor;          /**< Max bend of grass caused by wind */
+    uniform vec2 uTreeCenter;           /**< Position of the center of the tree */
+    uniform sampler2D uWindXSampler;    /**< Texture to define bend in X direction caused by wind */
+    uniform sampler2D uWindZSampler;    /**< Texture to define bend in Z direction caused by wind */
 
     varying vec2 vTextureCoord;
-    varying vec3 vTransformedNormal;
-    varying vec4 vLightPosition;
-    varying vec2 vShadowCoord;
-    varying float vShadowDistance;
+    varying vec3 vTransformedNormal;    /**< Normal vector in space */
+    varying vec4 vLightPosition;        /**< Position of point light from current vertex */
+    varying vec2 vShadowCoord;          /**< Coordinates used to sample shadow map */
+    varying float vShadowDistance;      /**< Distance from shadow camera to current object */
     
-    const vec2 v2 = vec2(0.5, 0.5);
+    const vec2 v2 = vec2(0.5, 0.5);     /**< Vector used to count shadow texture coordinates */
 
     void main(void) {
         if (uUseWind && aTextureCoord.y > 0.75) {
+            /**
+                Count position of upper vertices after applying wind effect
+            */
             float xBend = (texture2D(uWindXSampler, vec2((uTreeCenter.x + 0.5) / 128.0 + uTime, (uTreeCenter.y - 0.5) / 128.0)).r) - 0.5;
             xBend *= uBendFactor;
             float zBend = (texture2D(uWindZSampler, vec2((uTreeCenter.x + 0.5) / 128.0, (uTreeCenter.y - 0.5) / 128.0 - uTime)).r) - 0.5;
@@ -327,85 +421,116 @@ body {
 
         gl_Position = uPMatrix * uCamMatrix * vLightPosition;
 
+        /**
+            Count distance from shadow camera to vertex and coordinate to sample shadow map.
+            If vertex is not visible on shadow map set max distance.
+        */
         vec4 shadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
         vec4 shadowCoordinateWdivide = shadowPosition / shadowPosition.w;
         vShadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
         if (vShadowCoord.x < 0.0 || vShadowCoord.x > 1.0 || vShadowCoord.y < 0.0 || vShadowCoord.y > 1.0) {
-           vShadowDistance = 100.0;
+            vShadowDistance = 100.0;
         } else {
-           vShadowDistance = shadowPosition.z * 0.005;
-        }   
+            vShadowDistance = shadowPosition.z * 0.005;
+        }
 
+        /**
+            Flip the texture in Y axis
+        */
         vTextureCoord = 1.0 - aTextureCoord;
+
         vTransformedNormal = uNMatrix * aVertexNormal;
     }
 </script>
 
 <script id="vertTreeNoSampler" type="x-shader/x-vertex">
+/**
+    Vertex shader used to draw trees if vertex texture sampling is NOT available.
+*/
+
     attribute vec3 aVertexPosition;
     attribute vec3 aVertexNormal;
     attribute vec2 aTextureCoord;
 
-    uniform mat4 uMVMatrix;
-    uniform mat4 uCamMatrix;
-    uniform mat4 uPMatrix;
-    uniform mat3 uNMatrix;
-    uniform mat4 uShadowCamMatrix;
+    uniform mat4 uMVMatrix;             /**< Model view matrix */
+    uniform mat4 uCamMatrix;            /**< Eye camera position matrix */
+    uniform mat4 uPMatrix;              /**< Perspective matrix */
+    uniform mat3 uNMatrix;              /**< Normal matrix */
+    uniform mat4 uShadowCamMatrix;      /**< Shadow camera position matrix */
 
     varying vec2 vTextureCoord;
-    varying vec3 vTransformedNormal;
-    varying vec4 vLightPosition;
-    varying vec2 vShadowCoord;
-    varying float vShadowDistance;
+    varying vec3 vTransformedNormal;    /**< Normal vector in space */
+    varying vec4 vLightPosition;        /**< Position of point light from current vertex */
+    varying vec2 vShadowCoord;          /**< Coordinates used to sample shadow map */
+    varying float vShadowDistance;      /**< Distance from shadow camera to current object */
     
-    const vec2 v2 = vec2(0.5, 0.5);
+    const vec2 v2 = vec2(0.5, 0.5);     /**< Vector used to count shadow texture coordinates */
 
     void main(void) {
         vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
         gl_Position = uPMatrix * uCamMatrix * vLightPosition;
 
+        /**
+            Count distance from shadow camera to vertex and coordinate to sample shadow map.
+            If vertex is not visible on shadow map set max distance.
+        */
         vec4 shadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
         vec4 shadowCoordinateWdivide = shadowPosition / shadowPosition.w;
         vShadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
         if (vShadowCoord.x < 0.0 || vShadowCoord.x > 1.0 || vShadowCoord.y < 0.0 || vShadowCoord.y > 1.0) {
-           vShadowDistance = 100.0;
+            vShadowDistance = 100.0;
         } else {
-           vShadowDistance = shadowPosition.z * 0.005;
-        } 
+            vShadowDistance = shadowPosition.z * 0.005;
+        }
 
+        /**
+            Flip the texture in Y axis
+        */
         vTextureCoord = 1.0 - aTextureCoord;
+
         vTransformedNormal = uNMatrix * aVertexNormal;
     }
 </script>
 
 <script id="fragTree" type="x-shader/x-fragment">
+/**
+    Fragment shader used to draw trees
+*/
+
     precision mediump float;
 
-    uniform sampler2D uSampler;
-    uniform sampler2D uShadowSampler;
-    uniform float uRainDensity;
-    uniform bool uUseShadows;
-    uniform bool uUseSoftShadows;
-    uniform vec2 uShadowMapResolution;
-    uniform bool uUseLighting;
-    uniform vec3 uAmbientColor;
-    uniform vec3 uPointLightLocation;
-    uniform vec3 uPointLightColor;
+    uniform sampler2D uSampler;             /**< Texture to apply on the object */
+    uniform sampler2D uShadowSampler;       /**< Shadow map sampler */
+    uniform float uRainDensity;             /**< Intensivity of rain */
+    uniform bool uUseShadows;               /**< Apply shadows to the object */
+    uniform bool uUseSoftShadows;           /**< Apply PCF shadows to the object */
+    uniform vec2 uShadowMapResolution;      /**< Size of shadow map */
+    uniform bool uUseLighting;              /**< Apply lighting to the object */
+    uniform vec3 uAmbientColor;             /**< RGB color of ambient light */
+    uniform vec3 uPointLightLocation;       /**< Position of point light in space */
+    uniform vec3 uPointLightColor;          /**< RGB color of point light */
 
     varying vec2 vTextureCoord;
-    varying vec3 vTransformedNormal;
-    varying vec4 vLightPosition;
-    varying vec2 vShadowCoord;
-    varying float vShadowDistance;
+    varying vec3 vTransformedNormal;        /**< Normal vector in space */
+    varying vec4 vLightPosition;            /**< Position of point light from current vertex */
+    varying vec2 vShadowCoord;              /**< Coordinates used to sample shadow map */
+    varying float vShadowDistance;          /**< Distance from shadow camera to current object */
 
-    const vec3 grey = vec3(0.2, 0.2, 0.2);
+    const vec3 grey = vec3(0.2, 0.2, 0.2);  /**< Gray color in RGB used when it's raining */
 
     void main(void) {
+        /**
+            Sample the texture.
+            If current pixel is transparent don't draw it.
+        */
         vec4 textureColor = texture2D(uSampler, vTextureCoord);
         if (textureColor.a < 0.75) {
             discard;
         }
 
+        /**
+            Count color added by lights
+        */
         vec3 lightWeighting;
         if (!uUseLighting) {
             lightWeighting = vec3(1.0, 1.0, 1.0);
@@ -415,11 +540,19 @@ body {
             lightWeighting = uAmbientColor + uPointLightColor * directionalLightWeighting;
         }
 
+        /**
+            Sample the shadow map and check if there is any occluder between current fragment and light
+        */
         float visibility = 1.0;
         if (uUseShadows && vShadowDistance < 1.0) {
             const float bias = 0.003;
 
             if (uUseSoftShadows) {
+                /**
+                    Sample the current pixel and 8 pixels around it.
+                    Check if current fragment is fully or only partialy hidden from light.
+                    Creates penumbra zone on the edge of the shadow.
+                */
                 float sum = 0.0;
                 for (float i = -1.0; i < 1.1; i++) {
                     for (float j = -1.0; j < 1.1; j++) {
@@ -431,6 +564,9 @@ body {
                 }
                 visibility = 1.0 - 0.5 * (sum / 9.0);
             } else {
+                /**
+                    Sample only one pixel and check if fragment is hidden.
+                */
                 float distanceFromLight = texture2D(uShadowSampler, vShadowCoord).z;
                 if (vShadowDistance > distanceFromLight + bias) {
                     visibility = 0.5;
@@ -440,6 +576,9 @@ body {
 
         gl_FragColor = vec4(textureColor.rgb * lightWeighting * visibility, textureColor.a);
 
+        /**
+            When it's raining mix the counted color with gray
+        */
         if (uRainDensity > 0.05) {
             vec3 grayed = mix(gl_FragColor.rgb, grey, uRainDensity * 0.5);
             gl_FragColor = vec4(grayed, textureColor.a);
@@ -450,15 +589,19 @@ body {
 <!-- ____________________________________________________________ -->
 
 <script id="vertSkybox" type="x-shader/x-vertex">
+/**
+    Vertex shader used to draw skybox
+*/
+
     attribute vec3 aVertexPosition;
 
-    uniform mat4 uMVMatrix;
-    uniform mat4 uCamMatrix;
-    uniform mat4 uPMatrix;
+    uniform mat4 uMVMatrix;                 /**< Model view matrix */
+    uniform mat4 uCamMatrix;                /**< Eye camera position matrix */
+    uniform mat4 uPMatrix;                  /**< Perspective matrix */
 
     varying vec3 vTextureCoord;
 
-    const vec3 v3 = vec3(0.5, 0.5, 0.5);
+    const vec3 v3 = vec3(0.5, 0.5, 0.5);    /**< Vector used to count cube texture coordinates */
 
     void main(void) {
         gl_Position = uPMatrix * uCamMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
@@ -468,30 +611,41 @@ body {
 </script>
 
 <script id="fragSkybox" type="x-shader/x-fragment">
+/**
+    Fragment shader used to draw skybox
+*/
+
     precision mediump float;
 
-    uniform samplerCube uSampler;
-    uniform float uRainDensity;
+    uniform samplerCube uSampler;               /**< Cube texture to apply on the sky */
+    uniform float uRainDensity;                 /**< Intensivity of rain */
 
     varying vec3 vTextureCoord;
 
-    const vec4 grey = vec4(0.5, 0.5, 0.5, 1.0);
+    const vec3 grey = vec3(0.5, 0.5, 0.5);      /**< Gray color in RGB used when it's raining */
 
     void main(void) {
+        /**
+            Sample the texture and mix with grey color when it's raining
+        */
         vec4 texture = textureCube(uSampler, vTextureCoord);
-        gl_FragColor = mix(texture, grey, uRainDensity);
+        gl_FragColor = mix(texture, vec4(grey, 1.0), uRainDensity);
     }
 </script>
 
 <!-- ____________________________________________________________ -->
 
 <script id="vertRain" type="x-shader/x-vertex">
+/**
+    Vertex shader used to draw rain
+*/
+
     attribute vec3 aVertexPosition;
     attribute float aAlpha;
 
-    uniform mat4 uMVMatrix;
-    uniform mat4 uCamMatrix;
-    uniform mat4 uPMatrix;
+    uniform mat4 uMVMatrix;             /**< Model view matrix */
+    uniform mat4 uCamMatrix;            /**< Eye camera position matrix */
+    uniform mat4 uPMatrix;              /**< Perspective matrix */
 
     varying float vAlpha;
 
@@ -502,6 +656,9 @@ body {
 </script>
 
 <script id="fragRain" type="x-shader/x-fragment">
+/**
+    Fragment shader used to draw rain
+*/
     precision mediump float;
 
     varying float vAlpha;
@@ -514,21 +671,28 @@ body {
 <!-- ____________________________________________________________ -->
 
 <script id="vertShadow" type="x-shader/x-vertex">
+/**
+    Vertex shader used to draw shadow map
+*/
+
     attribute vec3 aVertexPosition;
     attribute vec2 aTextureCoord;
 
-    uniform mat4 uMVPMatrix;
+    uniform mat4 uMVPMatrix;        /**< Model view perspective for camera matrix */
 
-    uniform bool uMoveElement;
-    uniform float uTime;
-    uniform float uBendFactor;
-    const float speed = 2.5;
+    uniform bool uMoveElement;      /**< Apply object movment caused by wind */
+    uniform float uTime;            /**< Time passed */
+    uniform float uBendFactor;      /**< Max bend of grass caused by wind */
+    const float speed = 2.5;        /**< Speed of object wind animation */
 
-    varying vec4 vPosition;
+    varying vec4 vPosition;         /**< Position of vertex in space */
     varying vec2 vTextureCoord;
 
     void main(void) {
         if (uMoveElement && aTextureCoord.y > 0.75) {
+            /**
+                Count position of upper vertices after applying wind effect
+            */
             float xBend = (sin(uTime * speed) + 0.8) * 0.5 * uBendFactor;
             vPosition = uMVPMatrix * vec4(aVertexPosition.x + xBend, aVertexPosition.y, aVertexPosition.z, 1.0);
             gl_Position = vPosition;  
@@ -537,25 +701,40 @@ body {
             gl_Position = vPosition;            
         }
 
+        /**
+            Flip the texture in Y axis
+        */
         vTextureCoord = 1.0 - aTextureCoord;
     }
 </script>
 
 <script id="fragShadow" type="x-shader/x-fragment">
+/**
+    Fragment shader used to draw shadow map
+*/
+
     precision mediump float;
 
-    uniform sampler2D uSampler;
+    uniform sampler2D uSampler;     /**< Texture applied to the object */
 
-    varying vec4 vPosition;
+    varying vec4 vPosition;         /**< Position of vertex in space */
     varying vec2 vTextureCoord;
 
     void main(void) {
+        /**
+            Sample the texture.
+            If current pixel is transparent don't draw it.
+        */
         vec4 textureColor = texture2D(uSampler, vTextureCoord);
         if (textureColor.a < 0.75) {
             discard;
         }
 
+        /**
+            Convert the values from range 0.0 - 200.0 to 0.0 - 1.0
+        */
         float color = vPosition.z * 0.005;
+
         gl_FragColor = vec4(color, color, color, 1.0);
     }
 </script>
@@ -563,17 +742,21 @@ body {
 <!-- ____________________________________________________________ -->
 
 <script id="vertDof" type="x-shader/x-vertex">
+/**
+    Vertex shader used to draw DoF texture
+*/
+
     attribute vec3 aVertexPosition;
     attribute vec2 aTextureCoord;
 
-    uniform mat4 uMVPMatrix;
+    uniform mat4 uMVPMatrix;        /**< Model view perspective for eye matrix */
 
-    uniform bool uMoveElement;
-    uniform float uTime;
-    uniform float uBendFactor;
-    const float speed = 2.5;
+    uniform bool uMoveElement;      /**< Apply object movment caused by wind */
+    uniform float uTime;            /**< Time passed */
+    uniform float uBendFactor;      /**< Max bend of grass caused by wind */
+    const float speed = 2.5;        /**< Speed of object wind animation */
 
-    varying vec4 vPosition;
+    varying vec4 vPosition;         /**< Position of vertex in space */
     varying vec2 vTextureCoord;
 
     void main(void) {
@@ -586,20 +769,31 @@ body {
             gl_Position = vPosition;            
         }
 
+        /**
+            Flip the texture in Y axis
+        */
         vTextureCoord = 1.0 - aTextureCoord;
     }
 </script>
 
 <script id="fragDof" type="x-shader/x-fragment">
+/**
+    Fragment shader used to draw DoF texture
+*/
+
     precision mediump float;
 
-    uniform sampler2D uSampler;
-    uniform vec3 uDoFSettings;
+    uniform sampler2D uSampler;     /**< Texture applied to the object */
+    uniform vec3 uDoFSettings;      /**< Near, middle and far plane distance */
 
-    varying vec4 vPosition;
+    varying vec4 vPosition;         /**< Position of vertex in space */
     varying vec2 vTextureCoord;
 
     void main(void) {
+        /**
+            Sample the texture.
+            If current pixel is transparent don't draw it.
+        */
         vec4 textureColor = texture2D(uSampler, vTextureCoord);
         if (textureColor.a < 0.75) {
             discard;
@@ -610,8 +804,14 @@ body {
         float middle = uDoFSettings.y;
         float far = uDoFSettings.z;
 
+        /**
+            Convert the values from range 0.0 - 200.0 to 0.0 - 1.0
+        */
         float distance = vPosition.z * 0.005;
 
+        /**
+            Count how much blur should be added to the vertex and save it in texture
+        */
         if (   distance < near
             || distance > far) {
             blurValue = 1.0;
@@ -629,6 +829,10 @@ body {
 <!-- ____________________________________________________________ -->
 
 <script id="vertBlur" type="x-shader/x-vertex">
+/**
+    Vertex shader used to blur texture
+*/
+
     attribute vec3 aVertexPosition;
 
     varying vec2 vTextureCoord;
@@ -642,102 +846,126 @@ body {
 </script>
 
 <script id="fragHorizontalBlurDOF" type="x-shader/x-fragment">
+/**
+    Fragment shader used to gauss blur texture horizontally
+*/
+
     precision mediump float;
 
-    uniform sampler2D uSampler;
-    uniform sampler2D uDepthSampler;
-    uniform bool uUseDOF;
+    uniform sampler2D uSampler;         /**< Texture rendered with previous pass */
+    uniform sampler2D uDepthSampler;    /**< Depth of Field texture sampler */
 
     varying vec2 vTextureCoord;
 
-    const float offset = 1.0 / 768.0;
+    const float offset = 1.0 / 768.0;   /**< How much to move to take next texture sample */
 
     void main(void) {
+        /**
+            Count offset to take next DoF texture sample
+        */
         float zValue = texture2D(uDepthSampler, vTextureCoord).r;
-        if (uUseDOF == true) {
-            float blurSize = offset * zValue;
+        float blurSize = offset * zValue;
 
-            float gb1 = 0.38774;
-            float gb2 = 0.24477;
-            float gb3 = 0.06136;
-
-            vec4 sample = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)) * gb1;
-            sample     += texture2D(uSampler, vec2(vTextureCoord.s + blurSize, vTextureCoord.t)) * gb2;
-            sample     += texture2D(uSampler, vec2(vTextureCoord.s - blurSize, vTextureCoord.t)) * gb2;
-            sample     += texture2D(uSampler, vec2(vTextureCoord.s + blurSize * 2.0, vTextureCoord.t)) * gb3;
-            sample     += texture2D(uSampler, vec2(vTextureCoord.s - blurSize * 2.0, vTextureCoord.t)) * gb3;
-
-            gl_FragColor = sample;
-        } else {
-            gl_FragColor = texture2D(uSampler, vTextureCoord);
-        }
+        /**
+            Add horizontal gaussian blur
+        */
+        const float gb1 = 0.38774;
+        const float gb2 = 0.24477;
+        const float gb3 = 0.06136;
+        vec4 sample = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)) * gb1;
+        sample     += texture2D(uSampler, vec2(vTextureCoord.s + blurSize, vTextureCoord.t)) * gb2;
+        sample     += texture2D(uSampler, vec2(vTextureCoord.s - blurSize, vTextureCoord.t)) * gb2;
+        sample     += texture2D(uSampler, vec2(vTextureCoord.s + blurSize * 2.0, vTextureCoord.t)) * gb3;
+        sample     += texture2D(uSampler, vec2(vTextureCoord.s - blurSize * 2.0, vTextureCoord.t)) * gb3;
+        gl_FragColor = sample;
     }
 </script>
 
 
 <script id="fragVerticalBlurDOF" type="x-shader/x-fragment">
+/**
+    Fragment shader used to gauss blur texture vertically
+*/
+
     precision mediump float;
 
-    uniform sampler2D uSampler;
-    uniform sampler2D uDepthSampler;
-    uniform bool uUseDOF;
+    uniform sampler2D uSampler;         /**< Texture rendered with previous pass */
+    uniform sampler2D uDepthSampler;    /**< Depth of Field texture sampler */
 
     varying vec2 vTextureCoord;
 
-    const float offset = 1.0 / 768.0;
+    const float offset = 1.0 / 768.0;   /**< How much to move to take next texture sample */
 
     void main(void) {
+        /**
+            Count offset to take next DoF texture sample
+        */
         float zValue = texture2D(uDepthSampler, vTextureCoord).r;
-        if (uUseDOF == true) {
-            float blurSize = offset * zValue;
-            float gb1 = 0.38774;
-            float gb2 = 0.24477;
-            float gb3 = 0.06136;
+        float blurSize = offset * zValue;
 
-            vec4 sample = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)) * gb1;
-            sample +=  texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t + blurSize)) * gb2;
-            sample +=  texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t - blurSize)) * gb2;
-            sample +=  texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t + blurSize * 2.0)) * gb3;
-            sample +=  texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t - blurSize * 2.0)) * gb3;
-
-            gl_FragColor = sample;
-        }
-        else {
-            gl_FragColor = texture2D(uSampler, vTextureCoord);
-        }
+        /**
+            Add vertical gaussian blur
+        */
+        const float gb1 = 0.38774;
+        const float gb2 = 0.24477;
+        const float gb3 = 0.06136;
+        vec4 sample = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)) * gb1;
+        sample +=  texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t + blurSize)) * gb2;
+        sample +=  texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t - blurSize)) * gb2;
+        sample +=  texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t + blurSize * 2.0)) * gb3;
+        sample +=  texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t - blurSize * 2.0)) * gb3;
+        gl_FragColor = sample;
     }
 </script>
 
 <script id="fragRadialBlur" type="x-shader/x-fragment">
+/**
+    Fragment shader used to add radial blur
+*/
+
     precision mediump float;
 
-    uniform sampler2D uSampler;
-    uniform float uSpeed;
-    uniform bool uUseRadial;
+    uniform sampler2D uSampler;             /**< Texture rendered with previous pass */
+    uniform float uSpeed;                   /**< Camera movement speed */
+    uniform bool uUseRadial;                /**< Apply radial blur */
 
     varying vec2 vTextureCoord;
 
-    const float sampleStrength = 2.2;
-    const float sumDivider = 1.0 / 11.0;
-    const float offset = 1.0 / 768.0;
+    const float sampleStrength = 2.2;       /**< How much impact on result should have the taken samples */
+    const float sumDivider = 1.0 / 11.0;    /**< Divide 11 taken samples by 11 to get the correct color */
+    const float offset = 1.0 / 768.0;       /**< How much to move to take next texture sample */
 
     void main(void) {
         if (uUseRadial == true && uSpeed > 0.1) {
             vec4 color = texture2D(uSampler, vTextureCoord);
-            vec2 direction = 0.5 - vTextureCoord;
+
+            /**
+                Count direction in which you need to move to take next samples
+            */
+            vec2 blurCenter = vec2(0.5, 0.5);
+            vec2 direction = blurCenter - vTextureCoord;
             float distance = sqrt(direction.x * direction.x + direction.y * direction.y);
             direction = direction / distance;
             vec4 sum = color;
 
+            /**
+                Take samples of the texture
+            */
             for (float i = 1.0; i < 10.1; i++) {
                 sum += texture2D(uSampler, vTextureCoord + direction * (offset * i) * uSpeed);
             }
             sum *= sumDivider;
 
-            float t = distance * sampleStrength;
-            t = clamp(t, 0.0, 1.0);
+            /**
+                Count blured samples visibility
+            */
+            float ratio = distance * sampleStrength;
+            ratio = clamp(ratio, 0.0, 1.0);
 
-            gl_FragColor = mix(color, sum, t);
+            /**
+                Mix base color with blured samples
+            */
+            gl_FragColor = mix(color, sum, ratio);
         } else {
             gl_FragColor = texture2D(uSampler, vTextureCoord);
         }
@@ -753,19 +981,37 @@ body {
 
     function redraw() {
         if (depthOfField) {
+            /**
+                Draw scene to store blur level information
+            */
             drawDOF();
         }
         if (shadows) {
+            /**
+                Draw scene to store Z values
+            */
             drawShadows();
         }
+        /**
+            Draw scene to offscreen texture
+        */
         drawScene();
+        /**
+            Add postprocessing effects
+        */
         drawSceneFramebuffer();
     }
 
+    /**
+        Wind animation variables
+    */
     var windTextureMove = 0.0;
     var totalTime = 0.0;
-    var direction = 1;
 
+    /**
+        Test run animation variables
+    */
+    var direction = 1;
     var changeCamRotateHorizontal = false;
     var targetCamRotateHorizontal = 0;
     var changeCamRotateVertical = false;
@@ -777,12 +1023,18 @@ body {
     var yLevel;
 
     function animate() {
+        /**
+            Increase time variables
+        */
         windTextureMove += 0.003;
         if (windTextureMove > 1.0) {
             windTextureMove = 0.0;
         }
         totalTime += 0.01;
 
+        /**
+            Changes behaviour of the eye camera depending on moveMode variable
+        */
         switch(moveMode) {
             case 1:
                 camXPos += speed * Math.sin(degToRad(camRotateHorizontal));
@@ -803,6 +1055,9 @@ body {
                 break;
         }
 
+        /**
+            Starts the next stages of test run
+        */
         if (camZPos < -58.0 && direction == 2) {
             test();
         }
@@ -834,6 +1089,9 @@ body {
             test();
         }
 
+        /**
+            Applies changes to the camera angles, speed and height
+        */
         if (changeCamRotateHorizontal) {
             if (camRotateHorizontal < targetCamRotateHorizontal) {
                 camRotateHorizontal += 2.0;
@@ -891,11 +1149,17 @@ body {
         }
     }
 
+    /**
+        FPS counter variables
+    */
     var numberOfFrames = 0;
     var startTime = 0;
     var endTime = 0;
 
     function test() {
+        /**
+            Sets variables for the next stages of test run
+        */
         switch(direction) {
             case 1:
                 moveMode = 1;
@@ -1048,6 +1312,9 @@ body {
         }
     }
 
+    /**
+        Displays alert with statistics at the end of test run
+    */
     function showStats() {
         var n = "\n";
         var t = "  ";
@@ -1094,6 +1361,9 @@ body {
         );
     }
 
+    /**
+        Checks if buffers are filled and ready to draw
+    */
     function checkBuffers() {
         if (   !treeVertexPositionBuffer
             || !treeIndicesBuffer) {
@@ -1107,8 +1377,10 @@ body {
         return true;
     }
 
+    /**
+        Main drawing loop
+    */
     var loaded = false;
-
     function tick() {
         if (!loaded) {
             loaded = checkBuffers();
@@ -1119,47 +1391,56 @@ body {
 
             g_FPS.snapshot();
             numberOfFrames++;
-
-            spanDrops.innerHTML = rainVertices.length / 6;
         }
         requestAnimFrame(tick);
     }
 
     var screenWidth;
     var screenHeight;
-    var spanDrops;
-
     function webGLStart() {
+        /**
+            Get canvas to draw with GL
+        */
         var canvas          = document.getElementById("can");
         screenWidth         = window.innerWidth;
         screenHeight        = window.innerHeight;
         canvas.style.width  = screenWidth + "px";
         canvas.style.height = screenHeight + "px";
 
+        /**
+            Initialize GL context and it's components
+        */
         gl = initGL(canvas);
         initFramebuffers();
         initShaders();
         initBuffers();
         initTextures();
-        setInputValues();
-
-        g_FPS = new Framerate('frameRate');
-
         gl.enable(gl.DEPTH_TEST);
         gl.depthFunc(gl.LEQUAL);
 
+        setInputValues();
+
+        /**
+            Show FPS stats in proper divs
+        */
+        g_FPS = new Framerate('frameRate');
+
+        /**
+            Get input mouse and keyboard events
+        */
         canvas.onmousedown   = handleMouseDown;
         document.onmouseup   = handleMouseUp;
         document.onmousemove = handleMouseMove;
         document.onkeydown   = handleKeyDown;
         document.onkeyup     = handleKeyUp;
-        spanDrops = document.getElementById("drops");
 
+        /**
+            Start main rendering loop
+        */
         tick();
     }
 </script>
 </head>
-
 
 <body onload="webGLStart();">
     <canvas id="can" style="border: none;" width="1024" height="1024"></canvas>
@@ -1189,7 +1470,7 @@ body {
 	
     <br />
     <input type="checkbox" id="rain" onchange="cbRain(this)" checked /> Rain<br />
-    Rain density: <input id="rainDensity" type="range" min=1 max=250000 step=1 value=10000 onchange="moveRainSlider(this)" /><div> Drops: <span id="drops"></span></div>
+    Rain density: <input id="rainDensity" type="range" min=1 max=250000 step=1 value=10000 onchange="moveRainSlider(this)" />
     <br />
 
     <br />

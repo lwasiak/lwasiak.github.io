@@ -321,7 +321,6 @@ function initShaders() {
 
     shaderDofProgram.mvpMatrixUniform = gl.getUniformLocation(shaderDofProgram, "uMVPMatrix");
     shaderDofProgram.samplerUniform = gl.getUniformLocation(shaderDofProgram, "uSampler");
-    shaderDofProgram.DOFSettingsUniform = gl.getUniformLocation(shaderDofProgram, "uDoFSettings");
     shaderDofProgram.timeUniform = gl.getUniformLocation(shaderDofProgram, "uTime");
     shaderDofProgram.bendFactorUniform = gl.getUniformLocation(shaderDofProgram, "uBendFactor");
     shaderDofProgram.moveElementUniform = gl.getUniformLocation(shaderDofProgram, "uMoveElement");
@@ -347,7 +346,6 @@ function initShaders() {
 
     shaderHorizontalBlurDOFProgram.vertexPositionAttribute = gl.getAttribLocation(shaderHorizontalBlurDOFProgram, "aVertexPosition");
 
-    shaderHorizontalBlurDOFProgram.useDOFUniform = gl.getUniformLocation(shaderHorizontalBlurDOFProgram, "uUseDOF");
     shaderHorizontalBlurDOFProgram.samplerUniform = gl.getUniformLocation(shaderHorizontalBlurDOFProgram, "uSampler");
     shaderHorizontalBlurDOFProgram.depthSamplerUniform = gl.getUniformLocation(shaderHorizontalBlurDOFProgram, "uDepthSampler");
 
@@ -372,7 +370,6 @@ function initShaders() {
 
     shaderVerticalBlurDOFProgram.vertexPositionAttribute = gl.getAttribLocation(shaderVerticalBlurDOFProgram, "aVertexPosition");
 
-    shaderVerticalBlurDOFProgram.useDOFUniform = gl.getUniformLocation(shaderVerticalBlurDOFProgram, "uUseDOF");
     shaderVerticalBlurDOFProgram.samplerUniform = gl.getUniformLocation(shaderVerticalBlurDOFProgram, "uSampler");
     shaderVerticalBlurDOFProgram.depthSamplerUniform = gl.getUniformLocation(shaderVerticalBlurDOFProgram, "uDepthSampler");
 
@@ -443,7 +440,7 @@ function checkFramebuffer(id) {
     }
 }
 
-function attachTextureToFBO(fbo, texture, textureWidth, textureHeight, color) {
+function attachTextureToFBO(fbo, texture, textureWidth, textureHeight) {
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -451,7 +448,7 @@ function attachTextureToFBO(fbo, texture, textureWidth, textureHeight, color) {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texImage2D(gl.TEXTURE_2D, 0, color, textureWidth, textureHeight, 0, color, gl.UNSIGNED_BYTE, null);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureWidth, textureHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 
     var renderbuffer = gl.createRenderbuffer();
     gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
@@ -471,23 +468,23 @@ function attachTextureToFBO(fbo, texture, textureWidth, textureHeight, color) {
 function initFramebuffers() {
     sceneFramebuffer = gl.createFramebuffer();
     sceneTexture = gl.createTexture();
-    attachTextureToFBO(sceneFramebuffer, sceneTexture, screenWidth, screenHeight, gl.RGBA);
+    attachTextureToFBO(sceneFramebuffer, sceneTexture, screenWidth, screenHeight);
 
     shadowFramebuffer = gl.createFramebuffer();
     shadowTexture = gl.createTexture();
-    attachTextureToFBO(shadowFramebuffer, shadowTexture, screenWidth * shadowMapQuality, screenHeight * shadowMapQuality, gl.RGBA);
+    attachTextureToFBO(shadowFramebuffer, shadowTexture, screenWidth * shadowMapQuality, screenHeight * shadowMapQuality);
 
     dofFramebuffer = gl.createFramebuffer();
     dofTexture = gl.createTexture();
-    attachTextureToFBO(dofFramebuffer, dofTexture, screenWidth * DOFQuality, screenHeight * DOFQuality, gl.RGBA);
+    attachTextureToFBO(dofFramebuffer, dofTexture, screenWidth * DOFQuality, screenHeight * DOFQuality);
 
     blurHorizontalSceneFramebuffer = gl.createFramebuffer();
     blurHorizontalSceneTexture = gl.createTexture();
-    attachTextureToFBO(blurHorizontalSceneFramebuffer, blurHorizontalSceneTexture, screenWidth, screenHeight, gl.RGBA);
+    attachTextureToFBO(blurHorizontalSceneFramebuffer, blurHorizontalSceneTexture, screenWidth, screenHeight);
 
     blurVerticalSceneFramebuffer = gl.createFramebuffer();
     blurVerticalSceneTexture = gl.createTexture();
-    attachTextureToFBO(blurVerticalSceneFramebuffer, blurVerticalSceneTexture, screenWidth, screenHeight, gl.RGBA);
+    attachTextureToFBO(blurVerticalSceneFramebuffer, blurVerticalSceneTexture, screenWidth, screenHeight);
 }
 
 function handleLoadedTexture(texture, texParam) {
