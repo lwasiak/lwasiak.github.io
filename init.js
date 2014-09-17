@@ -1,3 +1,7 @@
+/**
+    Get webGL context from canvas
+    @param canvas    HTML canvas element
+*/
 function initGL(canvas) {
     var gl;
     try {
@@ -13,6 +17,13 @@ function initGL(canvas) {
     return gl;
 }
 
+/**
+    Gets shader text and compile it.
+
+    @param gl    WebGL context
+    @param id    Shader ID
+    @return      Compiled shader.
+*/
 function getShader(gl, id) {
     var shaderScript = document.getElementById(id);
     if (!shaderScript) {
@@ -48,6 +59,9 @@ function getShader(gl, id) {
     return shader;
 }
 
+/**
+    Shader programs variables
+*/
 var shaderGrassProgram;
 var shaderGroundProgram;
 var shaderTreeProgram;
@@ -62,8 +76,23 @@ var shaderRadialBlurProgram;
 var vertexTextureUnits;
 
 function initShaders() {
+    /**
+        Count perspective matrix
+    */
     mat4.perspective(pSceneMatrix, 45, screenWidth / screenHeight, 0.1, 200.0);
+
+    /**
+        Count shadow camera matrix
+    */
+    mat4.identity(camShadowMatrix);
+    mat4.rotateX(camShadowMatrix, camShadowMatrix, degToRad(shadowRotateVertical));
+    mat4.rotateY(camShadowMatrix, camShadowMatrix, degToRad(shadowRotateHorizontal));
+    mat4.translate(camShadowMatrix, camShadowMatrix, [-shadowXPos, -shadowYPos, -shadowZPos]);
     
+    /**
+        Get number of available vertex texture samplers units.
+        If vertex texture samplers are not available permanently turns off wind effect.
+    */
     vertexTextureUnits = gl.getParameter(gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS);
     
     var fragmentShader = getShader(gl, "fragGrass");
@@ -75,6 +104,9 @@ function initShaders() {
     }
     var vertexShader = getShader(gl, vertexShaderID);
 
+    /**
+        Create program and get all attributes and uniforms locations
+    */
     shaderGrassProgram = gl.createProgram();
     gl.attachShader(shaderGrassProgram, vertexShader);
     gl.attachShader(shaderGrassProgram, fragmentShader);
@@ -113,8 +145,16 @@ function initShaders() {
         shaderGrassProgram.bendFactorUniform = gl.getUniformLocation(shaderGrassProgram, "uBendFactor");
     }
 
+    /**
+        Sets uniforms which won't change during render loop
+    */
     gl.uniformMatrix4fv(shaderGrassProgram.pMatrixUniform, false, pSceneMatrix);
     gl.uniform2f(shaderGrassProgram.shadowMapResolutionUniform, 1.0 / (screenWidth * shadowMapQuality), 1.0 / (screenHeight * shadowMapQuality));
+    setLightingUniforms(shaderGrassProgram);
+    gl.uniformMatrix4fv(shaderGrassProgram.shadowCamMatrixUniform, false, camShadowMatrix);
+    gl.uniform1f(shaderGrassProgram.rainDensityUniform, grayed);
+    gl.uniform1i(shaderGrassProgram.useShadowsUniform, shadows);
+    gl.uniform1i(shaderGrassProgram.useSoftShadowsUniform, softShadows);
 
     gl.deleteShader(vertexShader);
     gl.deleteShader(fragmentShader);
@@ -157,6 +197,11 @@ function initShaders() {
 
     gl.uniformMatrix4fv(shaderGroundProgram.pMatrixUniform, false, pSceneMatrix);
     gl.uniform2f(shaderGroundProgram.shadowMapResolutionUniform, 1.0 / (screenWidth * shadowMapQuality), 1.0 / (screenHeight * shadowMapQuality));
+    setLightingUniforms(shaderGroundProgram);
+    gl.uniformMatrix4fv(shaderGroundProgram.shadowCamMatrixUniform, false, camShadowMatrix);
+    gl.uniform1f(shaderGroundProgram.rainDensityUniform, grayed);
+    gl.uniform1i(shaderGroundProgram.useShadowsUniform, shadows);
+    gl.uniform1i(shaderGroundProgram.useSoftShadowsUniform, softShadows);
 
     gl.deleteShader(vertexShader);
     gl.deleteShader(fragmentShader);
@@ -211,6 +256,11 @@ function initShaders() {
 
     gl.uniformMatrix4fv(shaderTreeProgram.pMatrixUniform, false, pSceneMatrix);
     gl.uniform2f(shaderTreeProgram.shadowMapResolutionUniform, 1.0 / (screenWidth * shadowMapQuality), 1.0 / (screenHeight * shadowMapQuality));
+    setLightingUniforms(shaderTreeProgram);
+    gl.uniformMatrix4fv(shaderTreeProgram.shadowCamMatrixUniform, false, camShadowMatrix);
+    gl.uniform1f(shaderTreeProgram.rainDensityUniform, grayed);
+    gl.uniform1i(shaderTreeProgram.useShadowsUniform, shadows);
+    gl.uniform1i(shaderTreeProgram.useSoftShadowsUniform, softShadows);
 
     gl.deleteShader(vertexShader);
     gl.deleteShader(fragmentShader);
@@ -240,6 +290,7 @@ function initShaders() {
     shaderSkyboxProgram.rainDensityUniform = gl.getUniformLocation(shaderSkyboxProgram, "uRainDensity");
 
     gl.uniformMatrix4fv(shaderSkyboxProgram.pMatrixUniform, false, pSceneMatrix);
+    gl.uniform1f(shaderSkyboxProgram.rainDensityUniform, grayed);
 
     gl.deleteShader(vertexShader);
     gl.deleteShader(fragmentShader);
@@ -267,6 +318,7 @@ function initShaders() {
     shaderRainProgram.mvMatrixUniform = gl.getUniformLocation(shaderRainProgram, "uMVMatrix");
     shaderRainProgram.camMatrixUniform = gl.getUniformLocation(shaderRainProgram, "uCamMatrix");
 
+    gl.lineWidth(rainDropsWidth);
     gl.uniformMatrix4fv(shaderRainProgram.pMatrixUniform, false, pSceneMatrix);
 
     gl.deleteShader(vertexShader);
@@ -324,6 +376,8 @@ function initShaders() {
     shaderDofProgram.timeUniform = gl.getUniformLocation(shaderDofProgram, "uTime");
     shaderDofProgram.bendFactorUniform = gl.getUniformLocation(shaderDofProgram, "uBendFactor");
     shaderDofProgram.moveElementUniform = gl.getUniformLocation(shaderDofProgram, "uMoveElement");
+
+    setDepthOfFieldUniforms();
 
     gl.deleteShader(vertexShader);
     gl.deleteShader(fragmentShader);
@@ -402,6 +456,9 @@ function initShaders() {
     gl.deleteShader(fragmentShader);
 }
 
+/**
+    Offscreen FBO variables
+*/
 var sceneFramebuffer;
 var sceneTexture;
 
@@ -417,6 +474,11 @@ var blurHorizontalSceneTexture;
 var blurVerticalSceneFramebuffer;
 var blurVerticalSceneTexture;
 
+/**
+    Checks if FBO is correctly created
+
+    @param id    FBO variable 
+*/
 function checkFramebuffer(id) {
     var status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
     switch (status) {
@@ -440,6 +502,12 @@ function checkFramebuffer(id) {
     }
 }
 
+/**
+    Sets color and depth attachment for FBO
+
+    @param fbo          FBO variable 
+    @param texture      Texture variable 
+*/
 function attachTextureToFBO(fbo, texture, textureWidth, textureHeight) {
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
     gl.activeTexture(gl.TEXTURE0);
@@ -465,6 +533,9 @@ function attachTextureToFBO(fbo, texture, textureWidth, textureHeight) {
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
 
+/**
+    Initializes FBOs with proper texture and size
+*/
 function initFramebuffers() {
     sceneFramebuffer = gl.createFramebuffer();
     sceneTexture = gl.createTexture();
@@ -487,6 +558,12 @@ function initFramebuffers() {
     attachTextureToFBO(blurVerticalSceneFramebuffer, blurVerticalSceneTexture, screenWidth, screenHeight);
 }
 
+/**
+    Initializes texture and sets it's paremeters
+
+    @param texture       2D Texture variable 
+    @param texParam      Texture wrap parameter 
+*/
 function handleLoadedTexture(texture, texParam) {
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
@@ -498,6 +575,12 @@ function handleLoadedTexture(texture, texParam) {
     gl.bindTexture(gl.TEXTURE_2D, null);
 }
 
+/**
+    Loads 6 textures and merge them into cubemap
+
+    @param texture       Texture dir
+    @param faces         Cube map face
+*/
 function loadCubeMap(texture, faces) {
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
     gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -518,21 +601,21 @@ function loadCubeMap(texture, faces) {
     }
 }
 
+/**
+    Variables to store textures
+*/
 var grassTexture;
-
 var flowerTypes = 2;
 var flowerTextures = [];
-
 var groundTextures = [];
-
 var treeTextures = [];
-
 var skyboxTexture;
-
 var bumpMapTexture;
-
 var windTextures = [];
 
+/**
+    Loads and creates textures from files
+*/
 function initTextures() {  
     grassTexture = gl.createTexture();
     grassTexture.image = new Image();
@@ -606,6 +689,9 @@ function initTextures() {
     loadCubeMap(skyboxTexture, skyboxFaces);
 }
 
+/**
+    Objects vertices buffers variables
+*/
 var maxClusterSize = 64;
 
 var grassVertexPositionBuffer;
@@ -628,6 +714,9 @@ var sceneVertexPositionBuffer;
 
 var randomTranslations = [];
 
+/**
+    Creates vertices buffers and initializes them with data
+*/
 function initBuffers() {
     grassVertexPositionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, grassVertexPositionBuffer);
@@ -692,6 +781,9 @@ function initBuffers() {
     sceneVertexPositionBuffer.itemSize = 2;
     sceneVertexPositionBuffer.numItems = 6;
 
+    /**
+        Create array filled with random float numbers used for drawing
+    */
     seed = 1;
     for (var i = 0; i < 100000; i++) {
         randomTranslations[i] = randomFloat(0.0, 1.0);
@@ -703,6 +795,12 @@ function initBuffers() {
     }
 }
 
+/**
+    Creates array with grass cluster vertices
+    @param grassClusterVertices       Output array
+    @param x, z                       Position offset
+    @param clusterSize                Number of grass object in row, column
+*/
 function countGrassClusterVertices(grassClusterVertices, x, z, clusterSize) {
     var current = 0;
     for (var i = 0; i < clusterSize; i++) {
@@ -736,6 +834,9 @@ function countGrassClusterVertices(grassClusterVertices, x, z, clusterSize) {
     }
 }
 
+/**
+    Creates buffers for grass cluster vertices and initializes it with data
+*/
 function countGrassClusterBuffers() {
     seed = 1;
     var clusterWidth = Math.floor(maxClusterSize / grassDensity);
@@ -782,6 +883,13 @@ function countGrassClusterBuffers() {
     grassBatchedIndicesBuffer.numItems = 18 * grassInCluster;
 }
 
+/**
+    Creates array with flower cluster vertices
+    @param flowerClusterVertices      Output array
+    @param x, z                       Position offset
+    @param clusterSize                Number of flower object in row, column
+    @param clusterSize                Distance between flower objects
+*/
 function countFlowerClusterVertices(flowerClusterVertices, x, z, clusterSize, flowerDensity) {
     var current = 0;
     for (var i = 0; i < clusterSize; i++) {
@@ -814,6 +922,11 @@ function countFlowerClusterVertices(flowerClusterVertices, x, z, clusterSize, fl
     }
 }
 
+/**
+    Creates buffers for flower cluster vertices and initializes it with data
+
+    @param flowerType      0 = red flower, 1 = blue flower
+*/
 function countFlowerClusterBuffers(flowerType) {
     seed = 2 * (flowerType + 5);
     var density = flowerDensity[flowerType];
@@ -861,6 +974,9 @@ function countFlowerClusterBuffers(flowerType) {
     flowerBatchedIndicesBuffer[flowerType].numItems = 18 * flowerInCluster;
 }
 
+/**
+    Terrain variables
+*/
 var terrainVertex = [];
 var terrainTextureCoords = [];
 var terrainIndices = [];
@@ -874,6 +990,9 @@ var terrainTextureMultipler = 10;
 var terrainTexture;
 var terrainData;
 
+/**
+    Initializes terrain bump map texture and terrain vertices buffers
+*/
 function initTerrain() {
     terrainTexture = gl.createTexture();
     terrainTexture.image = new Image();
@@ -931,9 +1050,15 @@ function initTerrain() {
     }
 }
 
+/**
+    Trees buffers variables
+*/
 var treeVertexPositionBuffer = [];
 var treeIndicesBuffer = [];
 
+/**
+    Initializes tree buffers with data from proper arrays
+*/
 function initTree() {
     for (var i = 0; i < 6; i++) {
         treeVertexPositionBuffer[i] = gl.createBuffer();
@@ -950,8 +1075,15 @@ function initTree() {
     }
 }
 
+/**
+    Rain arrays variables
+*/
 var rainVertices = [];
 var rainAlphas = [];
+
+/**
+    Initializes rain arrays 
+*/
 function initRain() {
     seed = 1;
     for (var i = 0; i < rainDensity; i++) {
@@ -968,6 +1100,9 @@ function initRain() {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(rainAlphas), gl.STATIC_DRAW);
 }
 
+/**
+    Counts skybox gray level
+*/
 function countGrayedSkybox() {
     grayed = rainDensity / 20000.0;
     if (grayed > 1.0) {
@@ -975,6 +1110,9 @@ function countGrayedSkybox() {
     }
 }
 
+/**
+    Places drops that hit the ground above it
+*/
 function resetDrop(index){
     var randomX = randomFloat(0.0, terrainSize);
     var randomY = randomFloat(35.0, 20.0);
@@ -990,6 +1128,9 @@ function resetDrop(index){
     rainVertices[index + 5] = randomZ + randomAngle;
 }
 
+/**
+    Moves rain drops down
+*/
 function updateRain() {
     for (var i = 1; i < rainVertices.length; i += 6) {
         rainVertices[i] -= 5.0;
@@ -1000,6 +1141,9 @@ function updateRain() {
     }
 }
 
+/**
+    Resets all rain variables and initializes them again
+*/
 function resetRain() {
     rainVertices = [];
     rainAlphas = [];

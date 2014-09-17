@@ -1,3 +1,5 @@
+//Benchmark settings
+
 var camRotateVertical = 0.0;
 var camRotateHorizontal = 55.0;
 var camXPos = 5.0;
@@ -51,6 +53,13 @@ var lightLocation = [10.0, 30.0, 20.0];
 var pointLightColor = [0.8, 0.8, 0.8];
 var ambientColor = [0.4, 0.4, 0.4];
 
+function countSceneCameraMatrix() {
+    mat4.identity(camSceneMatrix);
+    mat4.rotateX(camSceneMatrix, camSceneMatrix, degToRad(camRotateVertical));
+    mat4.rotateY(camSceneMatrix, camSceneMatrix, degToRad(camRotateHorizontal));
+    mat4.translate(camSceneMatrix, camSceneMatrix, [-camXPos, -camYPos, -camZPos]);
+}
+
 function setLightingUniforms(currentProgram) {
     gl.uniform1i(currentProgram.useLightingUniform, lighting);
     if (lighting) {
@@ -97,11 +106,6 @@ function drawShadows() {
     gl.useProgram(shaderShadowProgram);
     gl.viewport(0, 0, screenWidth * shadowMapQuality, screenHeight * shadowMapQuality);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-    mat4.identity(camShadowMatrix);
-    mat4.rotateX(camShadowMatrix, camShadowMatrix, degToRad(shadowRotateVertical));
-    mat4.rotateY(camShadowMatrix, camShadowMatrix, degToRad(shadowRotateHorizontal));
-    mat4.translate(camShadowMatrix, camShadowMatrix, [-shadowXPos, -shadowYPos, -shadowZPos]);
 
     gl.uniform1f(shaderShadowProgram.timeUniform, totalTime);
 
@@ -167,6 +171,7 @@ function drawShadows() {
         gl.bindTexture(gl.TEXTURE_2D, flowerTextures[flowerType]);
         gl.uniform1i(shaderShadowProgram.samplerUniform, 0);
 
+        gl.uniform1i(shaderShadowProgram.moveElementUniform, wind);
         gl.uniform1f(shaderShadowProgram.bendFactorUniform, flowerBendFactor[flowerType]);
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, flowerBatchedIndicesBuffer[flowerType]);
@@ -218,13 +223,6 @@ function drawDOF() {
     gl.useProgram(shaderDofProgram);
     gl.viewport(0, 0, screenWidth * DOFQuality, screenHeight * DOFQuality);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-    setDepthOfFieldUniforms();
-
-    mat4.identity(camSceneMatrix);
-    mat4.rotateX(camSceneMatrix, camSceneMatrix, degToRad(camRotateVertical));
-    mat4.rotateY(camSceneMatrix, camSceneMatrix, degToRad(camRotateHorizontal));
-    mat4.translate(camSceneMatrix, camSceneMatrix, [-camXPos, -camYPos, -camZPos]);
 
     gl.uniform1f(shaderDofProgram.timeUniform, totalTime);
 
@@ -290,6 +288,7 @@ function drawDOF() {
         gl.bindTexture(gl.TEXTURE_2D, flowerTextures[flowerType]);
         gl.uniform1i(shaderDofProgram.samplerUniform, 0);
 
+        gl.uniform1i(shaderDofProgram.moveElementUniform, wind);
         gl.uniform1f(shaderDofProgram.bendFactorUniform, flowerBendFactor[flowerType]);
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, flowerBatchedIndicesBuffer[flowerType]);
@@ -341,11 +340,6 @@ function drawScene() {
     gl.viewport(0, 0, screenWidth, screenHeight);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    mat4.identity(camSceneMatrix);
-    mat4.rotateX(camSceneMatrix, camSceneMatrix, degToRad(camRotateVertical));
-    mat4.rotateY(camSceneMatrix, camSceneMatrix, degToRad(camRotateHorizontal));
-    mat4.translate(camSceneMatrix, camSceneMatrix, [-camXPos, -camYPos, -camZPos]);
-
     drawGround();
     drawGrass();
     drawTree();
@@ -361,15 +355,8 @@ function drawScene() {
 
 function drawGround() {
     gl.useProgram(shaderGroundProgram);
-    setLightingUniforms(shaderGroundProgram);
 
     gl.uniformMatrix4fv(shaderGroundProgram.camMatrixUniform, false, camSceneMatrix);
-    gl.uniformMatrix4fv(shaderGroundProgram.shadowCamMatrixUniform, false, camShadowMatrix);
-
-    gl.uniform1f(shaderGroundProgram.rainDensityUniform, grayed);
-
-    gl.uniform1i(shaderGroundProgram.useShadowsUniform, shadows);
-    gl.uniform1i(shaderGroundProgram.useSoftShadowsUniform, softShadows);
 
     gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_2D, shadowTexture);
@@ -416,15 +403,8 @@ function drawGround() {
 
 function drawGrass() {
     gl.useProgram(shaderGrassProgram);
-    setLightingUniforms(shaderGrassProgram);
 
     gl.uniformMatrix4fv(shaderGrassProgram.camMatrixUniform, false, camSceneMatrix);
-    gl.uniformMatrix4fv(shaderGrassProgram.shadowCamMatrixUniform, false, camShadowMatrix);
-
-    gl.uniform1f(shaderGrassProgram.rainDensityUniform, grayed);
-
-    gl.uniform1i(shaderGrassProgram.useShadowsUniform, shadows);
-    gl.uniform1i(shaderGrassProgram.useSoftShadowsUniform, softShadows);
 
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, shadowTexture);
@@ -460,9 +440,6 @@ function drawGrass() {
     if (vertexTextureUnits != 0) {
         gl.uniform1f(shaderGrassProgram.bendFactorUniform, grassBendFactor);
     }
-
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
     if (batchGrass == true) {
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, grassBatchedIndicesBuffer);
@@ -581,7 +558,6 @@ function drawGrass() {
         }
     }
 
-    gl.disable(gl.BLEND);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, null);
     gl.activeTexture(gl.TEXTURE1);
@@ -599,15 +575,8 @@ function drawGrass() {
 
 function drawTree() {
     gl.useProgram(shaderTreeProgram);
-    setLightingUniforms(shaderTreeProgram);
 
     gl.uniformMatrix4fv(shaderTreeProgram.camMatrixUniform, false, camSceneMatrix);
-    gl.uniformMatrix4fv(shaderTreeProgram.shadowCamMatrixUniform, false, camShadowMatrix);
-
-    gl.uniform1f(shaderTreeProgram.rainDensityUniform, grayed);
-
-    gl.uniform1i(shaderTreeProgram.useShadowsUniform, shadows);
-    gl.uniform1i(shaderTreeProgram.useSoftShadowsUniform, softShadows);
 
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, shadowTexture);
@@ -681,8 +650,6 @@ function drawSkybox() {
 
     gl.uniformMatrix4fv(shaderSkyboxProgram.camMatrixUniform, false, camSceneMatrix);
 
-    gl.uniform1f(shaderSkyboxProgram.rainDensityUniform, grayed);
-
     gl.enableVertexAttribArray(shaderSkyboxProgram.vertexPositionAttribute);
 
     mat4.identity(mvSceneMatrix);
@@ -729,7 +696,6 @@ function drawRain() {
     gl.bindBuffer(gl.ARRAY_BUFFER, rainAlphaBuffer);
     gl.vertexAttribPointer(shaderRainProgram.alphaAttribute, rainAlphaBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-    gl.lineWidth(rainDropsWidth);
     gl.drawArrays(gl.LINES, 0, rainVertices.length / 3);
 
     gl.disableVertexAttribArray(shaderRainProgram.vertexPositionAttribute);
@@ -747,7 +713,6 @@ function drawSceneFramebuffer() {
     if (depthOfField) {
         gl.bindFramebuffer(gl.FRAMEBUFFER, blurHorizontalSceneFramebuffer);
         gl.useProgram(shaderHorizontalBlurDOFProgram);
-
         gl.viewport(0, 0, screenWidth, screenHeight);
         gl.clear(gl.COLOR_BUFFER_BIT);
 
@@ -776,7 +741,6 @@ function drawSceneFramebuffer() {
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, blurVerticalSceneFramebuffer);
         gl.useProgram(shaderVerticalBlurDOFProgram);
-
         gl.viewport(0, 0, screenWidth, screenHeight);
         gl.clear(gl.COLOR_BUFFER_BIT);
 
@@ -806,7 +770,6 @@ function drawSceneFramebuffer() {
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.useProgram(shaderRadialBlurProgram);
-
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
     gl.clearColor(1.0, 1.0, 1.0, 1.0);
 

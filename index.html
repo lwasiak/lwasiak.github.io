@@ -233,7 +233,7 @@ body {
 
 <script id="vertGround" type="x-shader/x-vertex">
 /**
-    Fragment shader used to draw ground
+    Vertex shader used to draw ground
 */
 
     attribute vec3 aVertexPosition;
@@ -278,7 +278,7 @@ body {
 
 <script id="fragGround" type="x-shader/x-fragment">
 /**
-    Fragment shader used to draw grass objects
+    Fragment shader used to draw ground
 */
     precision mediump float;
 
@@ -685,7 +685,7 @@ body {
     uniform float uBendFactor;      /**< Max bend of grass caused by wind */
     const float speed = 2.5;        /**< Speed of object wind animation */
 
-    varying vec4 vPosition;         /**< Position of vertex in space */
+    varying vec4 vPosition;         /**< Vertex position in space */
     varying vec2 vTextureCoord;
 
     void main(void) {
@@ -717,7 +717,7 @@ body {
 
     uniform sampler2D uSampler;     /**< Texture applied to the object */
 
-    varying vec4 vPosition;         /**< Position of vertex in space */
+    varying vec4 vPosition;         /**< Vertex position in space */
     varying vec2 vTextureCoord;
 
     void main(void) {
@@ -756,11 +756,14 @@ body {
     uniform float uBendFactor;      /**< Max bend of grass caused by wind */
     const float speed = 2.5;        /**< Speed of object wind animation */
 
-    varying vec4 vPosition;         /**< Position of vertex in space */
+    varying vec4 vPosition;         /**< Vertex position in space */
     varying vec2 vTextureCoord;
 
     void main(void) {
         if (uMoveElement && aTextureCoord.y > 0.75) {
+            /**
+                Count position of upper vertices after applying wind effect
+            */
             float xBend = (sin(uTime * speed) + 0.8) * 0.5 * uBendFactor;
             vPosition = uMVPMatrix * vec4(aVertexPosition.x + xBend, aVertexPosition.y, aVertexPosition.z, 1.0);
             gl_Position = vPosition;
@@ -786,7 +789,7 @@ body {
     uniform sampler2D uSampler;     /**< Texture applied to the object */
     uniform vec3 uDoFSettings;      /**< Near, middle and far plane distance */
 
-    varying vec4 vPosition;         /**< Position of vertex in space */
+    varying vec4 vPosition;         /**< Vertex position in space */
     varying vec2 vTextureCoord;
 
     void main(void) {
@@ -949,7 +952,7 @@ body {
             vec4 sum = color;
 
             /**
-                Take samples of the texture
+                Take texture samples
             */
             for (float i = 1.0; i < 10.1; i++) {
                 sum += texture2D(uSampler, vTextureCoord + direction * (offset * i) * uSpeed);
@@ -980,6 +983,7 @@ body {
     var g_FPS = 0;
 
     function redraw() {
+        countSceneCameraMatrix();
         if (depthOfField) {
             /**
                 Draw scene to store blur level information
