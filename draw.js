@@ -763,7 +763,7 @@ function drawRain() {
         Buffer data with gl.DYNAMIC_DRAW because it changes every frame
     */
     gl.bindBuffer(gl.ARRAY_BUFFER, rainVertexPositionBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(rainVertices), gl.DYNAMIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(rainVertices), gl.STATIC_DRAW);
     gl.vertexAttribPointer(shaderRainProgram.vertexPositionAttribute, rainVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, rainAlphaBuffer);
