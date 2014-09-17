@@ -24,7 +24,7 @@ var batchFlower  = [true, true];
 var flowerBendFactor = [0.5, 0.4];
 var flowerDensity = [10.0, 10.0];
 
-var numberOfTrees = 0;
+var numberOfTrees = 1;
 var treeScale = [0.25, 0.2, 0.25, 0.27, 0.25, 0.22];
 var treeXPos = [45.0, 20.0, 80.0, 30.0, 40.0, 90.0];
 var treeZPos = [-30.0, -60.0, -60.0, -90.0, -95.0, -10.0];
