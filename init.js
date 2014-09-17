@@ -149,12 +149,13 @@ function initShaders() {
         Sets uniforms which won't change during render loop
     */
     gl.uniformMatrix4fv(shaderGrassProgram.pMatrixUniform, false, pSceneMatrix);
-    gl.uniform2f(shaderGrassProgram.shadowMapResolutionUniform, 1.0 / (screenWidth * shadowMapQuality), 1.0 / (screenHeight * shadowMapQuality));
-    setLightingUniforms(shaderGrassProgram);
     gl.uniformMatrix4fv(shaderGrassProgram.shadowCamMatrixUniform, false, camShadowMatrix);
-    gl.uniform1f(shaderGrassProgram.rainDensityUniform, grayed);
     gl.uniform1i(shaderGrassProgram.useShadowsUniform, shadows);
     gl.uniform1i(shaderGrassProgram.useSoftShadowsUniform, softShadows);
+    gl.uniform2f(shaderGrassProgram.shadowMapResolutionUniform, 1.0 / (screenWidth * shadowMapQuality), 1.0 / (screenHeight * shadowMapQuality));
+    setLightingUniforms(shaderGrassProgram);
+    gl.uniform1f(shaderGrassProgram.rainDensityUniform, grayed);
+    gl.uniform1f(shaderGrassProgram.useWindUniform, wind);
 
     gl.deleteShader(vertexShader);
     gl.deleteShader(fragmentShader);
@@ -196,12 +197,12 @@ function initShaders() {
     shaderGroundProgram.rainDensityUniform = gl.getUniformLocation(shaderGroundProgram, "uRainDensity");
 
     gl.uniformMatrix4fv(shaderGroundProgram.pMatrixUniform, false, pSceneMatrix);
-    gl.uniform2f(shaderGroundProgram.shadowMapResolutionUniform, 1.0 / (screenWidth * shadowMapQuality), 1.0 / (screenHeight * shadowMapQuality));
-    setLightingUniforms(shaderGroundProgram);
     gl.uniformMatrix4fv(shaderGroundProgram.shadowCamMatrixUniform, false, camShadowMatrix);
-    gl.uniform1f(shaderGroundProgram.rainDensityUniform, grayed);
     gl.uniform1i(shaderGroundProgram.useShadowsUniform, shadows);
     gl.uniform1i(shaderGroundProgram.useSoftShadowsUniform, softShadows);
+    gl.uniform2f(shaderGroundProgram.shadowMapResolutionUniform, 1.0 / (screenWidth * shadowMapQuality), 1.0 / (screenHeight * shadowMapQuality));
+    setLightingUniforms(shaderGroundProgram);
+    gl.uniform1f(shaderGroundProgram.rainDensityUniform, grayed);
 
     gl.deleteShader(vertexShader);
     gl.deleteShader(fragmentShader);
@@ -255,12 +256,13 @@ function initShaders() {
     }
 
     gl.uniformMatrix4fv(shaderTreeProgram.pMatrixUniform, false, pSceneMatrix);
-    gl.uniform2f(shaderTreeProgram.shadowMapResolutionUniform, 1.0 / (screenWidth * shadowMapQuality), 1.0 / (screenHeight * shadowMapQuality));
-    setLightingUniforms(shaderTreeProgram);
     gl.uniformMatrix4fv(shaderTreeProgram.shadowCamMatrixUniform, false, camShadowMatrix);
-    gl.uniform1f(shaderTreeProgram.rainDensityUniform, grayed);
     gl.uniform1i(shaderTreeProgram.useShadowsUniform, shadows);
     gl.uniform1i(shaderTreeProgram.useSoftShadowsUniform, softShadows);
+    gl.uniform2f(shaderTreeProgram.shadowMapResolutionUniform, 1.0 / (screenWidth * shadowMapQuality), 1.0 / (screenHeight * shadowMapQuality));
+    setLightingUniforms(shaderTreeProgram);
+    gl.uniform1f(shaderTreeProgram.rainDensityUniform, grayed);
+    gl.uniform1f(shaderTreeProgram.useWindUniform, wind);
 
     gl.deleteShader(vertexShader);
     gl.deleteShader(fragmentShader);
@@ -373,6 +375,7 @@ function initShaders() {
 
     shaderDofProgram.mvpMatrixUniform = gl.getUniformLocation(shaderDofProgram, "uMVPMatrix");
     shaderDofProgram.samplerUniform = gl.getUniformLocation(shaderDofProgram, "uSampler");
+    shaderDofProgram.DOFSettingsUniform = gl.getUniformLocation(shaderDofProgram, "uDoFSettings");
     shaderDofProgram.timeUniform = gl.getUniformLocation(shaderDofProgram, "uTime");
     shaderDofProgram.bendFactorUniform = gl.getUniformLocation(shaderDofProgram, "uBendFactor");
     shaderDofProgram.moveElementUniform = gl.getUniformLocation(shaderDofProgram, "uMoveElement");
@@ -451,6 +454,9 @@ function initShaders() {
     shaderRadialBlurProgram.samplerUniform = gl.getUniformLocation(shaderRadialBlurProgram, "uSampler");
     shaderRadialBlurProgram.speedUniform = gl.getUniformLocation(shaderRadialBlurProgram, "uSpeed");
     shaderRadialBlurProgram.useRadialUniform = gl.getUniformLocation(shaderRadialBlurProgram, "uUseRadial");
+
+    gl.uniform1i(shaderRadialBlurProgram.useRadialUniform, radialBlur);
+    gl.uniform1f(shaderRadialBlurProgram.speedUniform, speed);
 
     gl.deleteShader(vertexShader);
     gl.deleteShader(fragmentShader);

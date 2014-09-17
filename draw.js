@@ -18,11 +18,11 @@ var terrainHeight = 20.0;
 
 var batchGrass = true;
 var grassBendFactor = 0.75;
-var grassDensity = 5.0;
+var grassDensity = 1.0;
 
 var batchFlower  = [true, true];
 var flowerBendFactor = [0.5, 0.4];
-var flowerDensity = [10.0, 10.0];
+var flowerDensity = [5.3, 4.7];
 
 var numberOfTrees = 6;
 var treeScale = [0.25, 0.2, 0.25, 0.27, 0.25, 0.22];
@@ -30,7 +30,7 @@ var treeXPos = [45.0, 20.0, 80.0, 30.0, 40.0, 90.0];
 var treeZPos = [-30.0, -60.0, -60.0, -90.0, -95.0, -10.0];
 var treeBendFactor = [10.0, 10.0, 10.0, 10.0, 10.0, 10.0];
 
-var wind = true;
+var wind = false;
 
 var rain = false;
 var rainDensity = 10000;
@@ -38,17 +38,17 @@ var rainDropsWidth = 3.0;
 var grayed = 0.0;
 var skybox = true;
 
-var radialBlur = false;
+var radialBlur = true;
 
 var DOFQuality = 1.0;
-var depthOfField = false;
+var depthOfField = true;
 var dofSettings = [0.1, 0.3, 0.5];
 
 var shadowMapQuality = 1.0;
 var shadows = false;
 var softShadows = false;
 
-var lighting = true;
+var lighting = false;
 var lightLocation = [10.0, 30.0, 20.0];
 var pointLightColor = [0.8, 0.8, 0.8];
 var ambientColor = [0.4, 0.4, 0.4];
@@ -101,6 +101,9 @@ var camSceneMatrix = mat4.create();
 var camShadowMatrix = mat4.create();
 var mvpMatrix = mat4.create();
 
+/**
+    Draws scene to store Z values in texture
+*/
 function drawShadows() {
     gl.bindFramebuffer(gl.FRAMEBUFFER, shadowFramebuffer);
     gl.useProgram(shaderShadowProgram);
@@ -115,6 +118,9 @@ function drawShadows() {
     //Ground
     mat4.identity(mvSceneMatrix);
 
+    /**
+        Count model view perspective matrix
+    */
     mat4.mul(mvpMatrix, camShadowMatrix, mvSceneMatrix);
     mat4.mul(mvpMatrix, pSceneMatrix, mvpMatrix);
     gl.uniformMatrix4fv(shaderShadowProgram.mvpMatrixUniform, false, mvpMatrix);
@@ -151,6 +157,9 @@ function drawShadows() {
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, grassBatchedIndicesBuffer);
 
+    /**
+        Draw 4 grass clusters of size 64x64 on 128x128 terrain
+    */
     for (var i = 0; i < 4; i++) {
         gl.bindBuffer(gl.ARRAY_BUFFER, grassBatchedVertexPositionBuffer[i]);
         gl.vertexAttribPointer(shaderShadowProgram.vertexPositionAttribute, 3, gl.FLOAT, gl.FALSE, 8 * 4, 0);
@@ -160,6 +169,9 @@ function drawShadows() {
     }
 
     //Flower
+    /**
+        Draw 2 flower types
+    */
     for (var flowerType = 0; flowerType < flowerTypes; flowerType++) {
         mat4.identity(mvSceneMatrix);
 
@@ -176,6 +188,9 @@ function drawShadows() {
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, flowerBatchedIndicesBuffer[flowerType]);
 
+        /**
+            Draw 4 flowers clusters of size 64x64 on 128x128 terrain
+        */
         for (var i = 0; i < 4; i++) {
             gl.bindBuffer(gl.ARRAY_BUFFER, flowerBatchedVertexPositionBuffer[flowerType][i]);
             gl.vertexAttribPointer(shaderShadowProgram.vertexPositionAttribute, 3, gl.FLOAT, gl.FALSE, 8 * 4, 0);
@@ -197,6 +212,10 @@ function drawShadows() {
         gl.bindTexture(gl.TEXTURE_2D, treeTextures[i]);
         gl.uniform1i(shaderShadowProgram.samplerUniform, 0);
 
+        /**
+            Translate the tree to desired position
+            X, Z from position array; Y get from terrain data 
+        */
         mat4.identity(mvSceneMatrix);
         var translateY = getPixel(terrainData, treeXPos[i], -treeZPos[i]).a;
         mat4.translate(mvSceneMatrix, mvSceneMatrix, [treeXPos[i], translateY / 255.0 * terrainHeight, treeZPos[i]]);
@@ -218,6 +237,9 @@ function drawShadows() {
     gl.disableVertexAttribArray(shaderShadowProgram.textureCoordAttribute);
 }
 
+/**
+    Draws scene to store desired blur level values
+*/
 function drawDOF() {
     gl.bindFramebuffer(gl.FRAMEBUFFER, dofFramebuffer);
     gl.useProgram(shaderDofProgram);
@@ -232,6 +254,9 @@ function drawDOF() {
     //Ground
     mat4.identity(mvSceneMatrix);
 
+    /**
+        Count model view perspective matrix
+    */
     mat4.mul(mvpMatrix, camSceneMatrix, mvSceneMatrix);
     mat4.mul(mvpMatrix, pSceneMatrix, mvpMatrix);
     gl.uniformMatrix4fv(shaderDofProgram.mvpMatrixUniform, false, mvpMatrix);
@@ -268,6 +293,9 @@ function drawDOF() {
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, grassBatchedIndicesBuffer);
 
+    /**
+        Draw 4 grass clusters of size 64x64 on 128x128 terrain
+    */
     for (var i = 0; i < 4; i++) {
         gl.bindBuffer(gl.ARRAY_BUFFER, grassBatchedVertexPositionBuffer[i]);
         gl.vertexAttribPointer(shaderDofProgram.vertexPositionAttribute, 3, gl.FLOAT, gl.FALSE, 8 * 4, 0);
@@ -277,6 +305,9 @@ function drawDOF() {
     }
 
     //Flower
+    /**
+        Draw 2 flower types
+    */
     for (var flowerType = 0; flowerType < flowerTypes; flowerType++) {
         mat4.identity(mvSceneMatrix);
 
@@ -293,11 +324,13 @@ function drawDOF() {
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, flowerBatchedIndicesBuffer[flowerType]);
 
+        /**
+            Draw 4 flowers clusters of size 64x64 on 128x128 terrain
+        */
         for (var i = 0; i < 4; i++) {
             gl.bindBuffer(gl.ARRAY_BUFFER, flowerBatchedVertexPositionBuffer[flowerType][i]);
             gl.vertexAttribPointer(shaderDofProgram.vertexPositionAttribute, 3, gl.FLOAT, gl.FALSE, 8 * 4, 0);
             gl.vertexAttribPointer(shaderDofProgram.textureCoordAttribute, 2, gl.FLOAT, gl.FALSE, 8 * 4, 6 * 4);
-
             gl.drawElements(gl.TRIANGLES, flowerBatchedIndicesBuffer[flowerType].numItems, gl.UNSIGNED_SHORT, 0);
         }        
     }
@@ -313,7 +346,10 @@ function drawDOF() {
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, treeTextures[i]);
         gl.uniform1i(shaderDofProgram.samplerUniform, 0);
-        
+        /**
+            Translate the tree to desired position
+            X, Z from position array; Y get from terrain data 
+        */
         mat4.identity(mvSceneMatrix);
         var translateY = getPixel(terrainData, treeXPos[i], -treeZPos[i]).a;
         mat4.translate(mvSceneMatrix, mvSceneMatrix, [treeXPos[i], translateY / 255.0 * terrainHeight, treeZPos[i]]);
@@ -335,6 +371,9 @@ function drawDOF() {
     gl.disableVertexAttribArray(shaderDofProgram.textureCoordAttribute);
 }
 
+/**
+    Draws scene in color
+*/
 function drawScene() {
     gl.bindFramebuffer(gl.FRAMEBUFFER, sceneFramebuffer);
     gl.viewport(0, 0, screenWidth, screenHeight);
@@ -353,6 +392,9 @@ function drawScene() {
     }
 }
 
+/**
+    Draws ground in color
+*/
 function drawGround() {
     gl.useProgram(shaderGroundProgram);
 
@@ -401,6 +443,9 @@ function drawGround() {
     gl.disableVertexAttribArray(shaderGroundProgram.textureCoordAttribute);
 }
 
+/**
+    Draws grass and flowers in color
+*/
 function drawGrass() {
     gl.useProgram(shaderGrassProgram);
 
@@ -409,10 +454,11 @@ function drawGrass() {
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, shadowTexture);
     gl.uniform1i(shaderGrassProgram.shadowSamplerUniform, 1);
-    
+
+    /**
+        Don't set uniforms if wind is not available
+    */
     if (vertexTextureUnits != 0) {
-        gl.uniform1f(shaderGrassProgram.useWindUniform, wind);
-    
         gl.activeTexture(gl.TEXTURE2);
         gl.bindTexture(gl.TEXTURE_2D, windTextures[0]);
         gl.uniform1i(shaderGrassProgram.windXSamplerUniform, 2);
@@ -468,6 +514,9 @@ function drawGrass() {
 
         var numOfGrass = Math.floor((terrainSize - 2) / grassDensity);
 
+        /**
+            Count position of each grass object and draw it
+        */
         for (var i = 0; i < numOfGrass; i++) {
             for (var j = 0; j < numOfGrass ; j++) {
                 mvPushMatrix();
@@ -532,6 +581,9 @@ function drawGrass() {
 
             var numOfFlower = Math.floor((terrainSize - 2) / flowerDensity[flowerType]);
 
+            /**
+                Count position of each flower and draw it
+            */
             for (var i = 0; i < numOfFlower; i++) {
                 for (var j = 0; j < numOfFlower ; j++) {
                     mvPushMatrix();
@@ -573,6 +625,9 @@ function drawGrass() {
     gl.disableVertexAttribArray(shaderGrassProgram.textureCoordAttribute);
 }
 
+/**
+    Draws trees in color
+*/
 function drawTree() {
     gl.useProgram(shaderTreeProgram);
 
@@ -582,9 +637,7 @@ function drawTree() {
     gl.bindTexture(gl.TEXTURE_2D, shadowTexture);
     gl.uniform1i(shaderTreeProgram.shadowSamplerUniform, 1);
     
-    if (vertexTextureUnits != 0) {
-        gl.uniform1f(shaderTreeProgram.useWindUniform, wind);
-    
+    if (vertexTextureUnits != 0) {   
         gl.activeTexture(gl.TEXTURE2);
         gl.bindTexture(gl.TEXTURE_2D, windTextures[0]);
         gl.uniform1i(shaderTreeProgram.windXSamplerUniform, 2);
@@ -610,6 +663,10 @@ function drawTree() {
         gl.bindTexture(gl.TEXTURE_2D, treeTextures[i]);
         gl.uniform1i(shaderTreeProgram.samplerUniform, 0);
 
+        /**
+            Translate the tree to desired position
+            X, Z from position array; Y get from terrain data 
+        */
         mat4.identity(mvSceneMatrix);
         var translateY = getPixel(terrainData, treeXPos[i], -treeZPos[i]).a;
         mat4.translate(mvSceneMatrix, mvSceneMatrix, [treeXPos[i], translateY / 255.0 * terrainHeight, treeZPos[i]]);
@@ -645,6 +702,9 @@ function drawTree() {
     gl.disableVertexAttribArray(shaderTreeProgram.textureCoordAttribute);
 }
 
+/**
+    Draws skybox in color
+*/
 function drawSkybox() {
     gl.useProgram(shaderSkyboxProgram);
 
@@ -652,6 +712,10 @@ function drawSkybox() {
 
     gl.enableVertexAttribArray(shaderSkyboxProgram.vertexPositionAttribute);
 
+    /**
+        Move skybox to eye camera position
+        Skybox looks the same from each point on the scene
+    */
     mat4.identity(mvSceneMatrix);
     mat4.translate(mvSceneMatrix, mvSceneMatrix, [camXPos, camYPos, camZPos]);
 
@@ -672,6 +736,9 @@ function drawSkybox() {
     gl.disableVertexAttribArray(shaderSkyboxProgram.vertexPositionAttribute);
 }
 
+/**
+    Draws rain in color
+*/
 function drawRain() {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
@@ -687,8 +754,14 @@ function drawRain() {
 
     gl.uniformMatrix4fv(shaderRainProgram.mvMatrixUniform, false, mvSceneMatrix);
 
+    /**
+        Count new drops positions
+    */
     updateRain();
 
+    /**
+        Buffer data with gl.DYNAMIC_DRAW because it changes every frame
+    */
     gl.bindBuffer(gl.ARRAY_BUFFER, rainVertexPositionBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(rainVertices), gl.DYNAMIC_DRAW);
     gl.vertexAttribPointer(shaderRainProgram.vertexPositionAttribute, rainVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -778,8 +851,9 @@ function drawSceneFramebuffer() {
 
     gl.enableVertexAttribArray(shaderRadialBlurProgram.vertexPositionAttribute);
 
-    gl.uniform1i(shaderRadialBlurProgram.useRadialUniform, radialBlur);
-    gl.uniform1f(shaderRadialBlurProgram.speedUniform, speed);
+    if (radialBlur) {
+        gl.uniform1f(shaderRadialBlurProgram.speedUniform, speed);
+    }
 
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, textureToDraw);

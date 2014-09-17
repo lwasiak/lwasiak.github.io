@@ -187,17 +187,37 @@ function cbWind(s) {
     wind = !wind;
     s.checked = wind;
 	totalTime = 0.0;
+    gl.useProgram(shaderGrassProgram);
+    gl.uniform1f(shaderGrassProgram.useWindUniform, wind);
+    gl.useProgram(shaderTreeProgram);
+    gl.uniform1f(shaderTreeProgram.useWindUniform, wind);
 }
 
 function cbRain(s) {
     rain = !rain;
     s.checked = rain;
     resetRain();
+    gl.useProgram(shaderGrassProgram);
+    gl.uniform1f(shaderGrassProgram.rainDensityUniform, grayed);
+    gl.useProgram(shaderGroundProgram);
+    gl.uniform1f(shaderGroundProgram.rainDensityUniform, grayed);
+    gl.useProgram(shaderTreeProgram);
+    gl.uniform1f(shaderTreeProgram.rainDensityUniform, grayed);
+    gl.useProgram(shaderSkyboxProgram);
+    gl.uniform1f(shaderSkyboxProgram.rainDensityUniform, grayed);
 }
 
 function moveRainSlider(s) {
     rainDensity = parseFloat(s.value);
     resetRain();
+    gl.useProgram(shaderGrassProgram);
+    gl.uniform1f(shaderGrassProgram.rainDensityUniform, grayed);
+    gl.useProgram(shaderGroundProgram);
+    gl.uniform1f(shaderGroundProgram.rainDensityUniform, grayed);
+    gl.useProgram(shaderTreeProgram);
+    gl.uniform1f(shaderTreeProgram.rainDensityUniform, grayed);
+    gl.useProgram(shaderSkyboxProgram);
+    gl.uniform1f(shaderSkyboxProgram.rainDensityUniform, grayed);
 }
 
 function cbSkybox(s) {
@@ -208,23 +228,35 @@ function cbSkybox(s) {
 function cbRadialBlur(s) {
     radialBlur = !radialBlur;
     s.checked = radialBlur;
+
+    gl.useProgram(shaderRadialBlurProgram);
+    gl.uniform1i(shaderRadialBlurProgram.useRadialUniform, radialBlur);
+    gl.uniform1f(shaderRadialBlurProgram.speedUniform, speed);
 }
 
 function cbDepthOfField(s) {
     depthOfField = !depthOfField;
     s.checked = depthOfField;
+    gl.useProgram(shaderDofProgram);
+    setDepthOfFieldUniforms();
 }
 
 function tbDOFN(s) {
     dofSettings[0] = parseFloat(s.value);
+    gl.useProgram(shaderDofProgram);
+    setDepthOfFieldUniforms();
 }
 
 function tbDOFM(s) {
     dofSettings[1] = parseFloat(s.value);
+    gl.useProgram(shaderDofProgram);
+    setDepthOfFieldUniforms();
 }
 
 function tbDOFF(s) {
     dofSettings[2] = parseFloat(s.value);
+    gl.useProgram(shaderDofProgram);
+    setDepthOfFieldUniforms();
 }
 
 function cbShadows(s) {
@@ -239,50 +271,128 @@ function cbShadows(s) {
         softShadowsPrevState = softShadows.checked;
         softShadows.checked = false;
     }
+
+    gl.useProgram(shaderGrassProgram);
+    gl.uniform1i(shaderGrassProgram.useShadowsUniform, shadows);
+    gl.uniform1i(shaderGrassProgram.useSoftShadowsUniform, softShadows);
+    gl.useProgram(shaderGroundProgram);
+    gl.uniform1i(shaderGroundProgram.useShadowsUniform, shadows);
+    gl.uniform1i(shaderGroundProgram.useSoftShadowsUniform, softShadows);
+    gl.useProgram(shaderTreeProgram);
+    gl.uniform1i(shaderTreeProgram.useShadowsUniform, shadows);
+    gl.uniform1i(shaderTreeProgram.useSoftShadowsUniform, softShadows);
 }
 
 function cbSoftShadows(s) {
     softShadows = !softShadows;
     s.checked = softShadows;
+
+    gl.useProgram(shaderGrassProgram);
+    gl.uniform1i(shaderGrassProgram.useSoftShadowsUniform, softShadows);
+    gl.useProgram(shaderGroundProgram);
+    gl.uniform1i(shaderGroundProgram.useSoftShadowsUniform, softShadows);
+    gl.useProgram(shaderTreeProgram);
+    gl.uniform1i(shaderTreeProgram.useSoftShadowsUniform, softShadows);
 }
 
 function cbLighting(s) {
     lighting = !lighting;
     s.checked = lighting;
+    gl.useProgram(shaderGrassProgram);
+    setLightingUniforms(shaderGrassProgram);
+    gl.useProgram(shaderGroundProgram);
+    setLightingUniforms(shaderGroundProgram);
+    gl.useProgram(shaderTreeProgram);
+    setLightingUniforms(shaderTreeProgram);
 }
 
 function tbLightLocationX(s) {
     lightLocation[0] = parseFloat(s.value);
+    gl.useProgram(shaderGrassProgram);
+    setLightingUniforms(shaderGrassProgram);
+    gl.useProgram(shaderGroundProgram);
+    setLightingUniforms(shaderGroundProgram);
+    gl.useProgram(shaderTreeProgram);
+    setLightingUniforms(shaderTreeProgram);
 }
 
 function tbLightLocationY(s) {
     lightLocation[1] = parseFloat(s.value);
+    gl.useProgram(shaderGrassProgram);
+    setLightingUniforms(shaderGrassProgram);
+    gl.useProgram(shaderGroundProgram);
+    setLightingUniforms(shaderGroundProgram);
+    gl.useProgram(shaderTreeProgram);
+    setLightingUniforms(shaderTreeProgram);
 }
 
 function tbLightLocationZ(s) {
     lightLocation[2] = parseFloat(s.value);
+    gl.useProgram(shaderGrassProgram);
+    setLightingUniforms(shaderGrassProgram);
+    gl.useProgram(shaderGroundProgram);
+    setLightingUniforms(shaderGroundProgram);
+    gl.useProgram(shaderTreeProgram);
+    setLightingUniforms(shaderTreeProgram);
 }
 
 function tbLightR(s) {
     pointLightColor[0] = parseFloat(s.value);
+    gl.useProgram(shaderGrassProgram);
+    setLightingUniforms(shaderGrassProgram);
+    gl.useProgram(shaderGroundProgram);
+    setLightingUniforms(shaderGroundProgram);
+    gl.useProgram(shaderTreeProgram);
+    setLightingUniforms(shaderTreeProgram);
 }
 
 function tbLightG(s) {
     pointLightColor[1] = parseFloat(s.value);
+    gl.useProgram(shaderGrassProgram);
+    setLightingUniforms(shaderGrassProgram);
+    gl.useProgram(shaderGroundProgram);
+    setLightingUniforms(shaderGroundProgram);
+    gl.useProgram(shaderTreeProgram);
+    setLightingUniforms(shaderTreeProgram);
 }
 
 function tbLightB(s) {
     pointLightColor[2] = parseFloat(s.value);
+    gl.useProgram(shaderGrassProgram);
+    setLightingUniforms(shaderGrassProgram);
+    gl.useProgram(shaderGroundProgram);
+    setLightingUniforms(shaderGroundProgram);
+    gl.useProgram(shaderTreeProgram);
+    setLightingUniforms(shaderTreeProgram);
 }
 
 function tbAmbientR(s) {
     ambientColor[0] = parseFloat(s.value);
+    gl.useProgram(shaderGrassProgram);
+    setLightingUniforms(shaderGrassProgram);
+    gl.useProgram(shaderGroundProgram);
+    setLightingUniforms(shaderGroundProgram);
+    gl.useProgram(shaderTreeProgram);
+    setLightingUniforms(shaderTreeProgram);
 }
 
 function tbAmbientG(s) {
     ambientColor[1] = parseFloat(s.value);
+    gl.useProgram(shaderGrassProgram);
+    setLightingUniforms(shaderGrassProgram);
+    gl.useProgram(shaderGroundProgram);
+    setLightingUniforms(shaderGroundProgram);
+    gl.useProgram(shaderTreeProgram);
+    setLightingUniforms(shaderTreeProgram);
 }
 
 function tbAmbientB(s) {
     ambientColor[2] = parseFloat(s.value);
+    gl.useProgram(shaderGrassProgram);
+    setLightingUniforms(shaderGrassProgram);
+    gl.useProgram(shaderGroundProgram);
+    setLightingUniforms(shaderGroundProgram);
+    gl.useProgram(shaderTreeProgram);
+    setLightingUniforms(shaderTreeProgram);
+    setLightingUniforms(shaderGroundProgram);
 }
