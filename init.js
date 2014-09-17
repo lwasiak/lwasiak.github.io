@@ -88,6 +88,8 @@ function initShaders() {
     mat4.rotateX(camShadowMatrix, camShadowMatrix, degToRad(shadowRotateVertical));
     mat4.rotateY(camShadowMatrix, camShadowMatrix, degToRad(shadowRotateHorizontal));
     mat4.translate(camShadowMatrix, camShadowMatrix, [-shadowXPos, -shadowYPos, -shadowZPos]);
+
+    resetRain();
     
     /**
         Get number of available vertex texture samplers units.
