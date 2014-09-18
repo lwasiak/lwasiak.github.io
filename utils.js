@@ -1,4 +1,11 @@
-var seed = 1;
+/**
+    Returns random float number
+
+    @param begin    Lowest possible number
+    @param range    Spread of returned numbers
+    @return         Random float number
+*/
+var seed = 1;       /**< Starting seed for random number generator */
 function randomFloat(begin, range) {
     var x = Math.cos(++seed) * 10000;
     x -= Math.floor(x);
@@ -6,29 +13,30 @@ function randomFloat(begin, range) {
     return (x * range + begin);
 }
 
+/**
+    Changes angle in degrees to radians
+
+    @param degrees  Angle in degrees
+    @return         Angle in radians
+*/
 function degToRad(degrees) {
     return degrees * Math.PI / 180;
 }
 
-function getImageData(image) {
-    var canvas = document.createElement('canvas');
-    canvas.width  = image.width;
-    canvas.height = image.height;
+var mvMatrixStack = [];     /**< Stack with model view matrices */
 
-    var context = canvas.getContext('2d');
-    context.drawImage( image, 0, 0 );
-
-    return context.getImageData(0, 0, image.width, image.height);
-}
-
-var mvMatrixStack = [];
-
+/**
+    Pushes model view matrix on stack
+*/
 function mvPushMatrix() {
     var copy = mat4.create();
     mat4.copy(copy, mvSceneMatrix);
     mvMatrixStack.push(copy);
 }
 
+/**
+    Pops model view matrix from stack
+*/
 function mvPopMatrix() {
     if (mvMatrixStack.length == 0) {
         alert("Invalid popMatrix!");
@@ -36,6 +44,30 @@ function mvPopMatrix() {
     mvSceneMatrix = mvMatrixStack.pop();
 }
 
+/**
+    Loads image data from file
+
+    @param image    File directory
+    @return         Array with RGBA data
+*/
+function getImageData(image) {
+    var canvas = document.createElement('canvas');
+    canvas.width  = image.width;
+    canvas.height = image.height;
+
+    var context = canvas.getContext('2d');
+    context.drawImage(image, 0, 0);
+
+    return context.getImageData(0, 0, image.width, image.height);
+}
+
+/**
+    Returns color of specified pixel
+
+    @param imageData    Array with RGBA data
+    @param x, y         Pixel int coordinates
+    @return             Struct with pixel color
+*/
 function getPixel(imageData, x, y) {
     var position = (x + imageData.width * y) * 4;
     var data = imageData.data;
@@ -45,6 +77,13 @@ function getPixel(imageData, x, y) {
             a: data[position + 3]};
 }
 
+/**
+    Returns average from four pixels laying nearest to the coordinates
+
+    @param imageData    Array with RGBA data
+    @param x, z         Pixel float coordinates
+    @return             Average alpha value of pixel
+*/
 function getPixelAvg(imageData, x, z) {
     var colorXA, colorXB;
     if (x < 0.0) {
@@ -89,13 +128,12 @@ function getPixelAvg(imageData, x, z) {
     return (colorXA + colorXB + colorZA + colorZB) / 2.0;
 }
 
-//
-// Framerate object
-//
-// This object keeps track of framerate and displays it as the innerHTML text of the
-// HTML element with the passed id. Once created you call snapshot at the end
-// of every rendering cycle. Every 500ms the framerate is updated in the HTML element.
-//
+
+/** Framerate object
+    This object keeps track of framerate and displays it as the innerHTML text of the
+    HTML element with the passed id. Once created you call snapshot at the end
+    of every rendering cycle. Every 500ms the framerate is updated in the HTML element.
+*/
 Framerate = function(id)
 {
     this.numFramerates = 20;

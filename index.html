@@ -188,32 +188,14 @@ body {
         */
         float visibility = 1.0;
         if (uUseShadows && vShadowDistance < 1.0) {
-            const float bias = 0.003;
-
-            if (uUseSoftShadows) {
-                /**
-                    Sample the current pixel and 8 pixels around it.
-                    Check if current fragment is fully or only partialy hidden from light.
-                    Creates penumbra zone on the edge of the shadow.
-                */
-                float sum = 0.0;
-                for (float i = -1.0; i < 1.1; i++) {
-                    for (float j = -1.0; j < 1.1; j++) {
-                        float distanceFromLight = texture2D(uShadowSampler, vec2(vShadowCoord.x + (j * uShadowMapResolution.x), vShadowCoord.y + (i * uShadowMapResolution.y))).z;
-                        if (vShadowDistance > distanceFromLight + bias) {
-                            sum += 1.0;
-                        }
-                    }
-                }
-                visibility = 1.0 - 0.5 * (sum / 9.0);
+            vec2 moments = texture2D(uShadowSampler, vShadowCoord).rg;
+            if (vShadowDistance <= moments.x) {
+                visibility = 1.0;
             } else {
-                /**
-                    Sample only one pixel and check if fragment is hidden.
-                */
-                float distanceFromLight = texture2D(uShadowSampler, vShadowCoord).z;
-                if (vShadowDistance > distanceFromLight + bias) {
-                    visibility = 0.5;
-                }
+                float variance = moments.y - (moments.x * moments.x);
+                variance = max(variance, 0.002);
+                float diff = vShadowDistance - moments.x;
+                visibility = variance / (variance + diff * diff);
             }
         }
 
@@ -322,32 +304,14 @@ body {
         */
         float visibility = 1.0;
         if (uUseShadows && vShadowDistance < 1.0) {
-            const float bias = 0.003;
-
-            if (uUseSoftShadows) {
-                /**
-                    Sample the current pixel and 8 pixels around it.
-                    Check if current fragment is fully or only partialy hidden from light.
-                    Creates penumbra zone on the edge of the shadow.
-                */
-                float sum = 0.0;
-                for (float i = -1.0; i < 1.1; i++) {
-                    for (float j = -1.0; j < 1.1; j++) {
-                        float distanceFromLight = texture2D(uShadowSampler, vec2(vShadowCoord.x + (j * uShadowMapResolution.x), vShadowCoord.y + (i * uShadowMapResolution.y))).z;
-                        if (vShadowDistance > distanceFromLight + bias) {
-                            sum += 1.0;
-                        }
-                    }
-                }
-                visibility = 1.0 - 0.5 * (sum / 9.0);
+            vec2 moments = texture2D(uShadowSampler, vShadowCoord).rg;
+            if (vShadowDistance <= moments.x) {
+                visibility = 1.0;
             } else {
-                /**
-                    Sample only one pixel and check if fragment is hidden.
-                */
-                float distanceFromLight = texture2D(uShadowSampler, vShadowCoord).z;
-                if (vShadowDistance > distanceFromLight + bias) {
-                    visibility = 0.5;
-                }
+                float variance = moments.y - (moments.x * moments.x);
+                variance = max(variance, 0.002);
+                float diff = vShadowDistance - moments.x;
+                visibility = variance / (variance + diff * diff);
             }
         }
 
@@ -544,32 +508,14 @@ body {
         */
         float visibility = 1.0;
         if (uUseShadows && vShadowDistance < 1.0) {
-            const float bias = 0.003;
-
-            if (uUseSoftShadows) {
-                /**
-                    Sample the current pixel and 8 pixels around it.
-                    Check if current fragment is fully or only partialy hidden from light.
-                    Creates penumbra zone on the edge of the shadow.
-                */
-                float sum = 0.0;
-                for (float i = -1.0; i < 1.1; i++) {
-                    for (float j = -1.0; j < 1.1; j++) {
-                        float distanceFromLight = texture2D(uShadowSampler, vec2(vShadowCoord.x + (j * uShadowMapResolution.x), vShadowCoord.y + (i * uShadowMapResolution.y))).z;
-                        if (vShadowDistance > distanceFromLight + bias) {
-                            sum += 1.0;
-                        }
-                    }
-                }
-                visibility = 1.0 - 0.5 * (sum / 9.0);
+            vec2 moments = texture2D(uShadowSampler, vShadowCoord).rg;
+            if (vShadowDistance <= moments.x) {
+                visibility = 1.0;
             } else {
-                /**
-                    Sample only one pixel and check if fragment is hidden.
-                */
-                float distanceFromLight = texture2D(uShadowSampler, vShadowCoord).z;
-                if (vShadowDistance > distanceFromLight + bias) {
-                    visibility = 0.5;
-                }
+                float variance = moments.y - (moments.x * moments.x);
+                variance = max(variance, 0.002);
+                float diff = vShadowDistance - moments.x;
+                visibility = variance / (variance + diff * diff);
             }
         }
 
@@ -731,9 +677,8 @@ body {
         /**
             Convert the values from range 0.0 - 200.0 to 0.0 - 1.0
         */
-        float color = vPosition.z * 0.005;
-
-        gl_FragColor = vec4(color, color, color, 1.0);
+        float distance = vPosition.z * 0.005;
+        gl_FragColor = vec4(distance, distance * distance, 0.0, 1.0);
     }
 </script>
 

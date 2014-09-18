@@ -1,26 +1,44 @@
+/**
+    Input devices state variables
+*/
 var mouseDown = false;
 var lastMouseX = null;
 var lastMouseY = null;
 var currentlyPressedKeys = [];
 
+/**
+    Keyboard key event
+*/
 function handleKeyDown(event) {
     currentlyPressedKeys[event.keyCode] = true;
 }
 
+/**
+    Keyboard key event
+*/
 function handleKeyUp(event) {
     currentlyPressedKeys[event.keyCode] = false;
 }
 
+/**
+    Mouse button event
+*/
 function handleMouseDown(event) {
     mouseDown = true;
     lastMouseX = event.clientX;
     lastMouseY = event.clientY;
 }
 
+/**
+    Mouse button event
+*/
 function handleMouseUp(event) {
     mouseDown = false;
 }
 
+/**
+    Mouse move event
+*/
 function handleMouseMove(event) {
     if (!mouseDown) {
         return;
@@ -38,8 +56,10 @@ function handleMouseMove(event) {
     lastMouseY = newY;
 }
 
-var speed = 0.0;
-
+/**
+    Handles actions when specified keys are pressed
+*/
+var speed = 0.0;            /**< Speed of eye camera */
 function handleKeys() {
     if (currentlyPressedKeys[49]) {     // 1
         moveMode = 4;
@@ -84,7 +104,10 @@ function handleKeys() {
     }
 }
 
-var softShadowsPrevState = true;
+/**
+    Sets correct values on sliders and checkboxes
+*/
+var softShadowsPrevState = true;        /**< Saves state of soft shadows check box when disabling shadows */
 function setInputValues() {
     document.getElementById("batchGrass").checked = batchGrass;
 
@@ -142,36 +165,57 @@ function setInputValues() {
     document.getElementById("ambientB").value = ambientColor[2];
 }
 
+/**
+    Called on change of grass density slider
+*/
 function moveGrassSlider(s) {
     grassDensity = s.max - parseFloat(s.value) + 1.0;
     countGrassClusterBuffers();
 }
 
+/**
+    Called on change of batch grass checkbox
+*/
 function cbBatchGrass(s) {
     batchGrass = !batchGrass;
     s.checked = batchGrass;
 }
 
+/**
+    Called on change of red flower density slider
+*/
 function moveFlowerRedSlider(s) {
     flowerDensity[0] = s.max - parseFloat(s.value) + 1.0;
     countFlowerClusterBuffers(0);
 }
 
+/**
+    Called on change of batch red flower checkbox
+*/
 function cbBatchFlowerRed(s) {
     batchFlower[0] = !batchFlower[0];
     s.checked = batchFlower[0];
 }
 
+/**
+    Called on change of blue flower density slider
+*/
 function moveFlowerBlueSlider(s) {
     flowerDensity[1] = s.max - parseFloat(s.value) + 1.0;
     countFlowerClusterBuffers(1);
 }
 
+/**
+    Called on change of batch blue flower checkbox
+*/
 function cbBatchFlowerBlue(s) {
     batchFlower[1] = !batchFlower[1];
     s.checked = batchFlower[1];
 }
 
+/**
+    Called on change of tree number
+*/
 function numTrees(s) {
     var number = s.value;
     if (number > 6) {
@@ -183,6 +227,9 @@ function numTrees(s) {
     s.value = number;
 }
 
+/**
+    Called on change of wind checkbox
+*/
 function cbWind(s) {
     wind = !wind;
     s.checked = wind;
@@ -193,6 +240,9 @@ function cbWind(s) {
     gl.uniform1f(shaderTreeProgram.useWindUniform, wind);
 }
 
+/**
+    Called on change of rain checkbox
+*/
 function cbRain(s) {
     rain = !rain;
     s.checked = rain;
@@ -207,6 +257,9 @@ function cbRain(s) {
     gl.uniform1f(shaderSkyboxProgram.rainDensityUniform, grayed);
 }
 
+/**
+    Called on change of rain density slider
+*/
 function moveRainSlider(s) {
     rainDensity = parseFloat(s.value);
     resetRain();
@@ -220,11 +273,17 @@ function moveRainSlider(s) {
     gl.uniform1f(shaderSkyboxProgram.rainDensityUniform, grayed);
 }
 
+/**
+    Called on change of skybox checkbox
+*/
 function cbSkybox(s) {
     skybox = !skybox;
     s.checked = skybox;
 }
 
+/**
+    Called on change of radial blur checkbox
+*/
 function cbRadialBlur(s) {
     radialBlur = !radialBlur;
     s.checked = radialBlur;
@@ -234,6 +293,9 @@ function cbRadialBlur(s) {
     gl.uniform1f(shaderRadialBlurProgram.speedUniform, speed);
 }
 
+/**
+    Called on change of depth of field checkbox
+*/
 function cbDepthOfField(s) {
     depthOfField = !depthOfField;
     s.checked = depthOfField;
@@ -241,24 +303,36 @@ function cbDepthOfField(s) {
     setDepthOfFieldUniforms();
 }
 
+/**
+    Called on change of depth of field near textbox value
+*/
 function tbDOFN(s) {
     dofSettings[0] = parseFloat(s.value);
     gl.useProgram(shaderDofProgram);
     setDepthOfFieldUniforms();
 }
 
+/**
+    Called on change of depth of field middle textbox value
+*/
 function tbDOFM(s) {
     dofSettings[1] = parseFloat(s.value);
     gl.useProgram(shaderDofProgram);
     setDepthOfFieldUniforms();
 }
 
+/**
+    Called on change of depth of field far textbox value
+*/
 function tbDOFF(s) {
     dofSettings[2] = parseFloat(s.value);
     gl.useProgram(shaderDofProgram);
     setDepthOfFieldUniforms();
 }
 
+/**
+    Called on change of shadows checkbox
+*/
 function cbShadows(s) {
     shadows = !shadows;
     s.checked = shadows;
@@ -283,6 +357,9 @@ function cbShadows(s) {
     gl.uniform1i(shaderTreeProgram.useSoftShadowsUniform, softShadows);
 }
 
+/**
+    Called on change of soft shadows checkbox
+*/
 function cbSoftShadows(s) {
     softShadows = !softShadows;
     s.checked = softShadows;
@@ -295,6 +372,9 @@ function cbSoftShadows(s) {
     gl.uniform1i(shaderTreeProgram.useSoftShadowsUniform, softShadows);
 }
 
+/**
+    Called on change of lighting checkbox
+*/
 function cbLighting(s) {
     lighting = !lighting;
     s.checked = lighting;
@@ -306,6 +386,9 @@ function cbLighting(s) {
     setLightingUniforms(shaderTreeProgram);
 }
 
+/**
+    Called on change of point light location X textbox value
+*/
 function tbLightLocationX(s) {
     lightLocation[0] = parseFloat(s.value);
     gl.useProgram(shaderGrassProgram);
@@ -316,6 +399,9 @@ function tbLightLocationX(s) {
     setLightingUniforms(shaderTreeProgram);
 }
 
+/**
+    Called on change of point light location Y textbox value
+*/
 function tbLightLocationY(s) {
     lightLocation[1] = parseFloat(s.value);
     gl.useProgram(shaderGrassProgram);
@@ -326,6 +412,9 @@ function tbLightLocationY(s) {
     setLightingUniforms(shaderTreeProgram);
 }
 
+/**
+    Called on change of point light location Z textbox value
+*/
 function tbLightLocationZ(s) {
     lightLocation[2] = parseFloat(s.value);
     gl.useProgram(shaderGrassProgram);
@@ -336,6 +425,9 @@ function tbLightLocationZ(s) {
     setLightingUniforms(shaderTreeProgram);
 }
 
+/**
+    Called on change of point light color red textbox value
+*/
 function tbLightR(s) {
     pointLightColor[0] = parseFloat(s.value);
     gl.useProgram(shaderGrassProgram);
@@ -346,6 +438,9 @@ function tbLightR(s) {
     setLightingUniforms(shaderTreeProgram);
 }
 
+/**
+    Called on change of point light color green textbox value
+*/
 function tbLightG(s) {
     pointLightColor[1] = parseFloat(s.value);
     gl.useProgram(shaderGrassProgram);
@@ -356,6 +451,9 @@ function tbLightG(s) {
     setLightingUniforms(shaderTreeProgram);
 }
 
+/**
+    Called on change of point light color blue textbox value
+*/
 function tbLightB(s) {
     pointLightColor[2] = parseFloat(s.value);
     gl.useProgram(shaderGrassProgram);
@@ -366,6 +464,9 @@ function tbLightB(s) {
     setLightingUniforms(shaderTreeProgram);
 }
 
+/**
+    Called on change of ambient color red textbox value
+*/
 function tbAmbientR(s) {
     ambientColor[0] = parseFloat(s.value);
     gl.useProgram(shaderGrassProgram);
@@ -376,6 +477,9 @@ function tbAmbientR(s) {
     setLightingUniforms(shaderTreeProgram);
 }
 
+/**
+    Called on change of ambient color green textbox value
+*/
 function tbAmbientG(s) {
     ambientColor[1] = parseFloat(s.value);
     gl.useProgram(shaderGrassProgram);
@@ -386,6 +490,9 @@ function tbAmbientG(s) {
     setLightingUniforms(shaderTreeProgram);
 }
 
+/**
+    Called on change of ambient color blue textbox value
+*/
 function tbAmbientB(s) {
     ambientColor[2] = parseFloat(s.value);
     gl.useProgram(shaderGrassProgram);
@@ -394,5 +501,4 @@ function tbAmbientB(s) {
     setLightingUniforms(shaderGroundProgram);
     gl.useProgram(shaderTreeProgram);
     setLightingUniforms(shaderTreeProgram);
-    setLightingUniforms(shaderGroundProgram);
 }

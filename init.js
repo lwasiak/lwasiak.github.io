@@ -89,7 +89,9 @@ function initShaders() {
     mat4.rotateY(camShadowMatrix, camShadowMatrix, degToRad(shadowRotateHorizontal));
     mat4.translate(camShadowMatrix, camShadowMatrix, [-shadowXPos, -shadowYPos, -shadowZPos]);
 
-    resetRain();
+    if(rain) {
+        countGrayedSkybox();
+    }
     
     /**
         Get number of available vertex texture samplers units.
