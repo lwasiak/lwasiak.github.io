@@ -1,10 +1,10 @@
 //Benchmark settings
 
-var camRotateVertical = 0.0;
+var camRotateVertical = 25.0;
 var camRotateHorizontal = 65.0;
-var camXPos = 5.0;
-var camYPos = 20.0;
-var camZPos = -15.0;
+var camXPos = 10.0;
+var camYPos = 40.0;
+var camZPos = -20.0;
 var camHeight = 1.0;
 var moveMode = 4;
 
