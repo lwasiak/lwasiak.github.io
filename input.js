@@ -134,6 +134,8 @@ function setInputValues() {
 
     document.getElementById("radialBlur").checked = radialBlur;
 
+    document.getElementById("radialBlur").checked = motionBlur;
+
     document.getElementById("depthOfField").checked = depthOfField;
     document.getElementById("near").value = dofSettings[0];
     document.getElementById("middle").value = dofSettings[1];
