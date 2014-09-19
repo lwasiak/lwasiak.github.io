@@ -36,7 +36,7 @@ var rain = false;
 var rainDensity = 10000;
 var rainDropsWidth = 3.0;
 var grayed = 0.0;
-var skybox = false;
+var skybox = true;
 
 var radialBlur = false;
 
@@ -383,11 +383,10 @@ function drawScene() {
     if (rain) {
         drawRain();
     }
-/*
+
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, copyTexture);
     gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, screenWidth, screenHeight, 0);
-*/
 }
 
 /**
