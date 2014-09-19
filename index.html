@@ -975,18 +975,21 @@ body {
         } else {
             gl_FragColor = texture2D(uSampler, vTextureCoord);
         }
-        vec4 baseTexture = texture2D(uSampler, vTextureCoord);
-        vec4 copiedTextureA = texture2D(uCopyTextureSamplerA, vTextureCoord);
-        vec4 copiedTextureB = texture2D(uCopyTextureSamplerB, vTextureCoord);
-        vec4 copiedTextureC = texture2D(uCopyTextureSamplerC, vTextureCoord);
-        vec4 copiedTextureD = texture2D(uCopyTextureSamplerD, vTextureCoord);
-        vec4 copiedTextureE = texture2D(uCopyTextureSamplerE, vTextureCoord);
 
-        gl_FragColor = mix(baseTexture, copiedTextureA, 0.4);
-        gl_FragColor = mix(gl_FragColor, copiedTextureB, 0.45);
-        gl_FragColor = mix(gl_FragColor, copiedTextureC, 0.5);
-        gl_FragColor = mix(gl_FragColor, copiedTextureD, 0.55);
-        gl_FragColor = mix(gl_FragColor, copiedTextureE, 0.6);
+        if (uUseRadial) {
+            vec4 baseTexture = texture2D(uSampler, vTextureCoord);
+            vec4 copiedTextureA = texture2D(uCopyTextureSamplerA, vTextureCoord);
+            vec4 copiedTextureB = texture2D(uCopyTextureSamplerB, vTextureCoord);
+            vec4 copiedTextureC = texture2D(uCopyTextureSamplerC, vTextureCoord);
+            vec4 copiedTextureD = texture2D(uCopyTextureSamplerD, vTextureCoord);
+            vec4 copiedTextureE = texture2D(uCopyTextureSamplerE, vTextureCoord);
+
+            gl_FragColor = mix(baseTexture, copiedTextureA, 0.4);
+            gl_FragColor = mix(gl_FragColor, copiedTextureB, 0.45);
+            gl_FragColor = mix(gl_FragColor, copiedTextureC, 0.5);
+            gl_FragColor = mix(gl_FragColor, copiedTextureD, 0.55);
+            gl_FragColor = mix(gl_FragColor, copiedTextureE, 0.6);            
+        }
 
         //gl_FragColor = texture2D(uSampler, vTextureCoord);
     }
@@ -1499,6 +1502,9 @@ body {
 
     <br />
     <input type="checkbox" id="radialBlur" onchange="cbRadialBlur(this)" checked /> Use Radial Blur<br />
+
+    <br />
+    <input type="checkbox" id="motionBlur" onchange="cbMotionBlur(this)" checked /> Use Motion Blur<br />
 
     <br />
     <input type="checkbox" id="depthOfField" onchange="cbDepthOfField(this)" checked /> Use Depth of Field<br />
