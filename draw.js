@@ -40,7 +40,7 @@ var skybox = false;
 
 var radialBlur = false;
 
-var motionBlur = true;
+var motionBlur = false;
 
 var DOFQuality = 1.0;
 var depthOfField = false;
