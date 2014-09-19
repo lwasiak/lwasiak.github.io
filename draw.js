@@ -1,10 +1,10 @@
 //Benchmark settings
 
-var camRotateVertical = 25.0;
-var camRotateHorizontal = 65.0;
-var camXPos = 10.0;
-var camYPos = 40.0;
-var camZPos = -20.0;
+var camRotateVertical = 0.0;
+var camRotateHorizontal = 55.0;
+var camXPos = 5.0;
+var camYPos = 20.0;
+var camZPos = -15.0;
 var camHeight = 1.0;
 var moveMode = 4;
 
@@ -18,11 +18,11 @@ var terrainHeight = 20.0;
 
 var batchGrass = true;
 var grassBendFactor = 0.75;
-var grassDensity = 10.0;
+var grassDensity = 1.0;
 
 var batchFlower  = [true, true];
 var flowerBendFactor = [0.5, 0.4];
-var flowerDensity = [50.3, 40.7];
+var flowerDensity = [5.3, 4.7];
 
 var numberOfTrees = 6;
 var treeScale = [0.25, 0.2, 0.25, 0.27, 0.25, 0.22];
@@ -30,7 +30,7 @@ var treeXPos = [45.0, 20.0, 80.0, 30.0, 40.0, 90.0];
 var treeZPos = [-30.0, -60.0, -60.0, -90.0, -95.0, -10.0];
 var treeBendFactor = [10.0, 10.0, 10.0, 10.0, 10.0, 10.0];
 
-var wind = false;
+var wind = true;
 
 var rain = false;
 var rainDensity = 1000;
@@ -45,7 +45,7 @@ var depthOfField = false;
 var dofSettings = [0.1, 0.3, 0.5];
 
 var shadowMapQuality = 1.0;
-var shadows = true;
+var shadows = false;
 var softShadows = true;
 
 var lighting = true;
@@ -383,6 +383,11 @@ function drawScene() {
     if (rain) {
         drawRain();
     }
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, copiedTextures[currentCopyTexture]);
+    gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, screenWidth, screenHeight, 0);
+    changeCopyTexture();
 }
 
 /**
@@ -851,6 +856,52 @@ function drawSceneFramebuffer() {
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, textureToDraw);
     gl.uniform1i(shaderRadialBlurProgram.samplerUniform, 0);
+
+
+    var sendTexture = currentCopyTexture - 1;
+    if (sendTexture == -1) {
+        sendTexture = 0;
+    }
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, copiedTextures[sendTexture]);
+    gl.uniform1i(shaderRadialBlurProgram.copyTextureSamplerAUniform, 1);
+
+    sendTexture++;
+    if (sendTexture == 5) {
+        sendTexture = 0;
+    }
+
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, copiedTextures[sendTexture]);
+    gl.uniform1i(shaderRadialBlurProgram.copyTextureSamplerBUniform, 2);
+
+    sendTexture++;
+    if (sendTexture == 5) {
+        sendTexture = 0;
+    }
+
+    gl.activeTexture(gl.TEXTURE3);
+    gl.bindTexture(gl.TEXTURE_2D, copiedTextures[sendTexture]);
+    gl.uniform1i(shaderRadialBlurProgram.copyTextureSamplerCUniform, 3);
+
+    sendTexture++;
+    if (sendTexture == 5) {
+        sendTexture = 0;
+    }
+
+    gl.activeTexture(gl.TEXTURE4);
+    gl.bindTexture(gl.TEXTURE_2D, copiedTextures[sendTexture]);
+    gl.uniform1i(shaderRadialBlurProgram.copyTextureSamplerDUniform, 4);
+
+    sendTexture++;
+    if (sendTexture == 5) {
+        sendTexture = 0;
+    }
+
+    gl.activeTexture(gl.TEXTURE5);
+    gl.bindTexture(gl.TEXTURE_2D, copiedTextures[sendTexture]);
+    gl.uniform1i(shaderRadialBlurProgram.copyTextureSamplerEUniform, 5);
 
     gl.drawArrays(gl.TRIANGLES, 0, sceneVertexPositionBuffer.numItems);
 

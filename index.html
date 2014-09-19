@@ -188,14 +188,32 @@ body {
         */
         float visibility = 1.0;
         if (uUseShadows && vShadowDistance < 1.0) {
-            vec2 moments = texture2D(uShadowSampler, vShadowCoord).rg;
-            if (vShadowDistance <= moments.x) {
-                visibility = 1.0;
+            const float bias = 0.003;
+
+            if (uUseSoftShadows) {
+                /**
+                    Sample the current pixel and 8 pixels around it.
+                    Check if current fragment is fully or only partialy hidden from light.
+                    Creates penumbra zone on the edge of the shadow.
+                */
+                float sum = 0.0;
+                for (float i = -1.0; i < 1.1; i++) {
+                    for (float j = -1.0; j < 1.1; j++) {
+                        float distanceFromLight = texture2D(uShadowSampler, vec2(vShadowCoord.x + (j * uShadowMapResolution.x), vShadowCoord.y + (i * uShadowMapResolution.y))).z;
+                        if (vShadowDistance > distanceFromLight + bias) {
+                            sum += 1.0;
+                        }
+                    }
+                }
+                visibility = 1.0 - 0.5 * (sum / 9.0);
             } else {
-                float variance = moments.y - (moments.x * moments.x);
-                variance = max(variance, 0.002);
-                float diff = vShadowDistance - moments.x;
-                visibility = variance / (variance + diff * diff);
+                /**
+                    Sample only one pixel and check if fragment is hidden.
+                */
+                float distanceFromLight = texture2D(uShadowSampler, vShadowCoord).z;
+                if (vShadowDistance > distanceFromLight + bias) {
+                    visibility = 0.5;
+                }
             }
         }
 
@@ -304,14 +322,32 @@ body {
         */
         float visibility = 1.0;
         if (uUseShadows && vShadowDistance < 1.0) {
-            vec2 moments = texture2D(uShadowSampler, vShadowCoord).rg;
-            if (vShadowDistance <= moments.x) {
-                visibility = 1.0;
+            const float bias = 0.003;
+
+            if (uUseSoftShadows) {
+                /**
+                    Sample the current pixel and 8 pixels around it.
+                    Check if current fragment is fully or only partialy hidden from light.
+                    Creates penumbra zone on the edge of the shadow.
+                */
+                float sum = 0.0;
+                for (float i = -1.0; i < 1.1; i++) {
+                    for (float j = -1.0; j < 1.1; j++) {
+                        float distanceFromLight = texture2D(uShadowSampler, vec2(vShadowCoord.x + (j * uShadowMapResolution.x), vShadowCoord.y + (i * uShadowMapResolution.y))).z;
+                        if (vShadowDistance > distanceFromLight + bias) {
+                            sum += 1.0;
+                        }
+                    }
+                }
+                visibility = 1.0 - 0.5 * (sum / 9.0);
             } else {
-                float variance = moments.y - (moments.x * moments.x);
-                variance = max(variance, 0.002);
-                float diff = vShadowDistance - moments.x;
-                visibility = variance / (variance + diff * diff);
+                /**
+                    Sample only one pixel and check if fragment is hidden.
+                */
+                float distanceFromLight = texture2D(uShadowSampler, vShadowCoord).z;
+                if (vShadowDistance > distanceFromLight + bias) {
+                    visibility = 0.5;
+                }
             }
         }
 
@@ -508,14 +544,32 @@ body {
         */
         float visibility = 1.0;
         if (uUseShadows && vShadowDistance < 1.0) {
-            vec2 moments = texture2D(uShadowSampler, vShadowCoord).rg;
-            if (vShadowDistance <= moments.x) {
-                visibility = 1.0;
+            const float bias = 0.003;
+
+            if (uUseSoftShadows) {
+                /**
+                    Sample the current pixel and 8 pixels around it.
+                    Check if current fragment is fully or only partialy hidden from light.
+                    Creates penumbra zone on the edge of the shadow.
+                */
+                float sum = 0.0;
+                for (float i = -1.0; i < 1.1; i++) {
+                    for (float j = -1.0; j < 1.1; j++) {
+                        float distanceFromLight = texture2D(uShadowSampler, vec2(vShadowCoord.x + (j * uShadowMapResolution.x), vShadowCoord.y + (i * uShadowMapResolution.y))).z;
+                        if (vShadowDistance > distanceFromLight + bias) {
+                            sum += 1.0;
+                        }
+                    }
+                }
+                visibility = 1.0 - 0.5 * (sum / 9.0);
             } else {
-                float variance = moments.y - (moments.x * moments.x);
-                variance = max(variance, 0.002);
-                float diff = vShadowDistance - moments.x;
-                visibility = variance / (variance + diff * diff);
+                /**
+                    Sample only one pixel and check if fragment is hidden.
+                */
+                float distanceFromLight = texture2D(uShadowSampler, vShadowCoord).z;
+                if (vShadowDistance > distanceFromLight + bias) {
+                    visibility = 0.5;
+                }
             }
         }
 
@@ -678,7 +732,7 @@ body {
             Convert the values from range 0.0 - 200.0 to 0.0 - 1.0
         */
         float distance = vPosition.z * 0.005;
-        gl_FragColor = vec4(distance, distance * distance, 0.0, 1.0);
+        gl_FragColor = vec4(distance, distance, distance, 1.0);
     }
 </script>
 
@@ -875,6 +929,12 @@ body {
     uniform float uSpeed;                   /**< Camera movement speed */
     uniform bool uUseRadial;                /**< Apply radial blur */
 
+    uniform sampler2D uCopyTextureSamplerA;
+    uniform sampler2D uCopyTextureSamplerB;
+    uniform sampler2D uCopyTextureSamplerC;
+    uniform sampler2D uCopyTextureSamplerD;
+    uniform sampler2D uCopyTextureSamplerE;
+
     varying vec2 vTextureCoord;
 
     const float sampleStrength = 2.2;       /**< How much impact on result should have the taken samples */
@@ -915,6 +975,20 @@ body {
         } else {
             gl_FragColor = texture2D(uSampler, vTextureCoord);
         }
+        vec4 baseTexture = texture2D(uSampler, vTextureCoord);
+        vec4 copiedTextureA = texture2D(uCopyTextureSamplerA, vTextureCoord);
+        vec4 copiedTextureB = texture2D(uCopyTextureSamplerB, vTextureCoord);
+        vec4 copiedTextureC = texture2D(uCopyTextureSamplerC, vTextureCoord);
+        vec4 copiedTextureD = texture2D(uCopyTextureSamplerD, vTextureCoord);
+        vec4 copiedTextureE = texture2D(uCopyTextureSamplerE, vTextureCoord);
+
+        gl_FragColor = mix(baseTexture, copiedTextureA, 0.4);
+        gl_FragColor = mix(gl_FragColor, copiedTextureB, 0.45);
+        gl_FragColor = mix(gl_FragColor, copiedTextureC, 0.5);
+        gl_FragColor = mix(gl_FragColor, copiedTextureD, 0.55);
+        gl_FragColor = mix(gl_FragColor, copiedTextureE, 0.6);
+
+        //gl_FragColor = texture2D(uSampler, vTextureCoord);
     }
 </script>
 
