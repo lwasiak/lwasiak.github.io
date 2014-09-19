@@ -383,11 +383,6 @@ function drawScene() {
     if (rain) {
         drawRain();
     }
-
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, copiedTextures[currentCopyTexture]);
-    gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, screenWidth, screenHeight, 0);
-    changeCopyTexture();
 }
 
 /**
@@ -856,52 +851,6 @@ function drawSceneFramebuffer() {
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, textureToDraw);
     gl.uniform1i(shaderRadialBlurProgram.samplerUniform, 0);
-
-
-    var sendTexture = currentCopyTexture - 1;
-    if (sendTexture == -1) {
-        sendTexture = 0;
-    }
-
-    gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, copiedTextures[sendTexture]);
-    gl.uniform1i(shaderRadialBlurProgram.copyTextureSamplerAUniform, 1);
-
-    sendTexture++;
-    if (sendTexture == 5) {
-        sendTexture = 0;
-    }
-
-    gl.activeTexture(gl.TEXTURE2);
-    gl.bindTexture(gl.TEXTURE_2D, copiedTextures[sendTexture]);
-    gl.uniform1i(shaderRadialBlurProgram.copyTextureSamplerBUniform, 2);
-
-    sendTexture++;
-    if (sendTexture == 5) {
-        sendTexture = 0;
-    }
-
-    gl.activeTexture(gl.TEXTURE3);
-    gl.bindTexture(gl.TEXTURE_2D, copiedTextures[sendTexture]);
-    gl.uniform1i(shaderRadialBlurProgram.copyTextureSamplerCUniform, 3);
-
-    sendTexture++;
-    if (sendTexture == 5) {
-        sendTexture = 0;
-    }
-
-    gl.activeTexture(gl.TEXTURE4);
-    gl.bindTexture(gl.TEXTURE_2D, copiedTextures[sendTexture]);
-    gl.uniform1i(shaderRadialBlurProgram.copyTextureSamplerDUniform, 4);
-
-    sendTexture++;
-    if (sendTexture == 5) {
-        sendTexture = 0;
-    }
-
-    gl.activeTexture(gl.TEXTURE5);
-    gl.bindTexture(gl.TEXTURE_2D, copiedTextures[sendTexture]);
-    gl.uniform1i(shaderRadialBlurProgram.copyTextureSamplerEUniform, 5);
 
     gl.drawArrays(gl.TRIANGLES, 0, sceneVertexPositionBuffer.numItems);
 
