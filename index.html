@@ -929,6 +929,12 @@ body {
     uniform float uSpeed;                   /**< Camera movement speed */
     uniform bool uUseRadial;                /**< Apply radial blur */
 
+    uniform sampler2D uCopyTextureSamplerA;
+    uniform sampler2D uCopyTextureSamplerB;
+    uniform sampler2D uCopyTextureSamplerC;
+    uniform sampler2D uCopyTextureSamplerD;
+    uniform sampler2D uCopyTextureSamplerE;
+
     varying vec2 vTextureCoord;
 
     const float sampleStrength = 2.2;       /**< How much impact on result should have the taken samples */
@@ -969,6 +975,20 @@ body {
         } else {
             gl_FragColor = texture2D(uSampler, vTextureCoord);
         }
+        vec4 baseTexture = texture2D(uSampler, vTextureCoord);
+        vec4 copiedTextureA = texture2D(uCopyTextureSamplerA, vTextureCoord);
+        vec4 copiedTextureB = texture2D(uCopyTextureSamplerB, vTextureCoord);
+        vec4 copiedTextureC = texture2D(uCopyTextureSamplerC, vTextureCoord);
+        vec4 copiedTextureD = texture2D(uCopyTextureSamplerD, vTextureCoord);
+        vec4 copiedTextureE = texture2D(uCopyTextureSamplerE, vTextureCoord);
+
+        gl_FragColor = mix(baseTexture, copiedTextureA, 0.4);
+        gl_FragColor = mix(gl_FragColor, copiedTextureB, 0.45);
+        gl_FragColor = mix(gl_FragColor, copiedTextureC, 0.5);
+        gl_FragColor = mix(gl_FragColor, copiedTextureD, 0.55);
+        gl_FragColor = mix(gl_FragColor, copiedTextureE, 0.6);
+
+        //gl_FragColor = texture2D(uSampler, vTextureCoord);
     }
 </script>
 
