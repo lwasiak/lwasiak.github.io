@@ -36,9 +36,11 @@ var rain = false;
 var rainDensity = 10000;
 var rainDropsWidth = 3.0;
 var grayed = 0.0;
-var skybox = true;
+var skybox = false;
 
 var radialBlur = false;
+
+var motionBlur = true;
 
 var DOFQuality = 1.0;
 var depthOfField = false;
@@ -383,10 +385,6 @@ function drawScene() {
     if (rain) {
         drawRain();
     }
-
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, copyTexture);
-    gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, screenWidth, screenHeight, 0);
 }
 
 /**
@@ -768,10 +766,21 @@ function drawRain() {
 }
 
 /**
+    Saves texture drawn by last framebuffer to use it by motion blur
+*/
+function saveTexture() {
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, copiedTextures[currentCopyTexture]);
+    gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, screenWidth, screenHeight, 0);
+    changeCopyTexture();    
+}
+
+/**
     Draws scene rendered in previous passes onscreen
     Adds postprocessing effects
 */
-function drawSceneFramebuffer() {
+var textureToDraw;          /**< Texture used by programs */
+function drawOnScreen() {
     /**
         Scene is always drawn fullscreen so there is no need for depth test
     */
@@ -779,69 +788,152 @@ function drawSceneFramebuffer() {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
-    var textureToDraw = sceneTexture;
+    textureToDraw = sceneTexture;
+
     if (depthOfField) {
-        gl.bindFramebuffer(gl.FRAMEBUFFER, blurHorizontalSceneFramebuffer);
-        gl.useProgram(shaderHorizontalBlurDOFProgram);
-        gl.viewport(0, 0, screenWidth, screenHeight);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, sceneVertexPositionBuffer);
-        gl.vertexAttribPointer(shaderHorizontalBlurDOFProgram.vertexPositionAttribute, sceneVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-        gl.enableVertexAttribArray(shaderHorizontalBlurDOFProgram.vertexPositionAttribute);
-
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, textureToDraw);
-        gl.uniform1i(shaderHorizontalBlurDOFProgram.samplerUniform, 0);
-
-        gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, dofTexture);
-        gl.uniform1i(shaderHorizontalBlurDOFProgram.depthSamplerUniform, 1);
-
-        gl.drawArrays(gl.TRIANGLES, 0, sceneVertexPositionBuffer.numItems);
-
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        gl.disableVertexAttribArray(shaderHorizontalBlurDOFProgram.vertexPositionAttribute);
-
-        textureToDraw = blurHorizontalSceneTexture;
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, blurVerticalSceneFramebuffer);
-        gl.useProgram(shaderVerticalBlurDOFProgram);
-        gl.viewport(0, 0, screenWidth, screenHeight);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, sceneVertexPositionBuffer);
-        gl.vertexAttribPointer(shaderVerticalBlurDOFProgram.vertexPositionAttribute, sceneVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-        gl.enableVertexAttribArray(shaderVerticalBlurDOFProgram.vertexPositionAttribute);
-
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, textureToDraw);
-        gl.uniform1i(shaderVerticalBlurDOFProgram.samplerUniform, 0);
-
-        gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, dofTexture);
-        gl.uniform1i(shaderVerticalBlurDOFProgram.depthSamplerUniform, 1);
-
-        gl.drawArrays(gl.TRIANGLES, 0, sceneVertexPositionBuffer.numItems);
-
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        gl.disableVertexAttribArray(shaderVerticalBlurDOFProgram.vertexPositionAttribute);
-
-        textureToDraw = blurVerticalSceneTexture;
+        drawDOFBlur();
+    }
+    if (radialBlur) {
+        drawRadialBlur();
+    }
+    if (motionBlur) {
+        saveTexture();
+        drawMotionBlur();
     }
 
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    drawTextureOnScreen();
+
+    gl.disable(gl.BLEND);
+    gl.enable(gl.DEPTH_TEST);
+}
+
+function drawDOFBlur() {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, blurHorizontalSceneFramebuffer);
+    gl.useProgram(shaderHorizontalBlurDOFProgram);
+    gl.viewport(0, 0, screenWidth, screenHeight);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, sceneVertexPositionBuffer);
+    gl.vertexAttribPointer(shaderHorizontalBlurDOFProgram.vertexPositionAttribute, sceneVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    gl.enableVertexAttribArray(shaderHorizontalBlurDOFProgram.vertexPositionAttribute);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, textureToDraw);
+    gl.uniform1i(shaderHorizontalBlurDOFProgram.samplerUniform, 0);
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, dofTexture);
+    gl.uniform1i(shaderHorizontalBlurDOFProgram.depthSamplerUniform, 1);
+
+    gl.drawArrays(gl.TRIANGLES, 0, sceneVertexPositionBuffer.numItems);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.disableVertexAttribArray(shaderHorizontalBlurDOFProgram.vertexPositionAttribute);
+
+    textureToDraw = blurHorizontalSceneTexture;
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, blurVerticalSceneFramebuffer);
+    gl.useProgram(shaderVerticalBlurDOFProgram);
+    gl.viewport(0, 0, screenWidth, screenHeight);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, sceneVertexPositionBuffer);
+    gl.vertexAttribPointer(shaderVerticalBlurDOFProgram.vertexPositionAttribute, sceneVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    gl.enableVertexAttribArray(shaderVerticalBlurDOFProgram.vertexPositionAttribute);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, textureToDraw);
+    gl.uniform1i(shaderVerticalBlurDOFProgram.samplerUniform, 0);
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, dofTexture);
+    gl.uniform1i(shaderVerticalBlurDOFProgram.depthSamplerUniform, 1);
+
+    gl.drawArrays(gl.TRIANGLES, 0, sceneVertexPositionBuffer.numItems);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.disableVertexAttribArray(shaderVerticalBlurDOFProgram.vertexPositionAttribute);
+
+    textureToDraw = blurVerticalSceneTexture;
+}
+
+function drawMotionBlur() {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, motionBlurFramebuffer);
+    gl.useProgram(shaderMotionBlurProgram);
+    gl.viewport(0, 0, screenWidth, screenHeight);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, sceneVertexPositionBuffer);
+    gl.vertexAttribPointer(shaderMotionBlurProgram.vertexPositionAttribute, sceneVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    gl.enableVertexAttribArray(shaderMotionBlurProgram.vertexPositionAttribute);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, textureToDraw);
+    gl.uniform1i(shaderMotionBlurProgram.samplerUniform, 0);
+
+    var sendTexture = currentCopyTexture - 1;
+    if (sendTexture == -1) sendTexture = 0;
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, copiedTextures[sendTexture]);
+    gl.uniform1i(shaderMotionBlurProgram.copyTextureSamplerAUniform, 1);
+
+    sendTexture++;
+    if (sendTexture == 5) sendTexture = 0;
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, copiedTextures[sendTexture]);
+    gl.uniform1i(shaderMotionBlurProgram.copyTextureSamplerBUniform, 2);
+
+    sendTexture++;
+    if (sendTexture == 5) sendTexture = 0;
+    gl.activeTexture(gl.TEXTURE3);
+    gl.bindTexture(gl.TEXTURE_2D, copiedTextures[sendTexture]);
+    gl.uniform1i(shaderMotionBlurProgram.copyTextureSamplerCUniform, 3);
+
+    sendTexture++;
+    if (sendTexture == 5) sendTexture = 0;
+    gl.activeTexture(gl.TEXTURE4);
+    gl.bindTexture(gl.TEXTURE_2D, copiedTextures[sendTexture]);
+    gl.uniform1i(shaderMotionBlurProgram.copyTextureSamplerDUniform, 4);
+
+    sendTexture++;
+    if (sendTexture == 5) sendTexture = 0;
+    gl.activeTexture(gl.TEXTURE5);
+    gl.bindTexture(gl.TEXTURE_2D, copiedTextures[sendTexture]);
+    gl.uniform1i(shaderMotionBlurProgram.copyTextureSamplerEUniform, 5);
+
+    gl.drawArrays(gl.TRIANGLES, 0, sceneVertexPositionBuffer.numItems);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.activeTexture(gl.TEXTURE3);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.activeTexture(gl.TEXTURE4);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.activeTexture(gl.TEXTURE5);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.disableVertexAttribArray(shaderMotionBlurProgram.vertexPositionAttribute);
+
+    textureToDraw = motionBlurTexture;
+}
+
+function drawRadialBlur() {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, radialBlurFramebuffer);
     gl.useProgram(shaderRadialBlurProgram);
-    gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-    gl.clearColor(1.0, 1.0, 1.0, 1.0);
+    gl.viewport(0, 0, screenWidth, screenHeight);
+    gl.clear(gl.COLOR_BUFFER_BIT);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, sceneVertexPositionBuffer);
     gl.vertexAttribPointer(shaderRadialBlurProgram.vertexPositionAttribute, sceneVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -860,10 +952,29 @@ function drawSceneFramebuffer() {
 
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, null);
-    gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, null);
     gl.disableVertexAttribArray(shaderRadialBlurProgram.vertexPositionAttribute);
 
-    gl.disable(gl.BLEND);
-    gl.enable(gl.DEPTH_TEST);
+    textureToDraw = radialBlurTexture;
+}
+
+function drawTextureOnScreen() {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.useProgram(shaderScreenProgram);
+    gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+    gl.clearColor(1.0, 1.0, 1.0, 1.0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, sceneVertexPositionBuffer);
+    gl.vertexAttribPointer(shaderScreenProgram.vertexPositionAttribute, sceneVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    gl.enableVertexAttribArray(shaderScreenProgram.vertexPositionAttribute);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, textureToDraw);
+    gl.uniform1i(shaderScreenProgram.samplerUniform, 0);
+
+    gl.drawArrays(gl.TRIANGLES, 0, sceneVertexPositionBuffer.numItems);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.disableVertexAttribArray(shaderScreenProgram.vertexPositionAttribute);
 }

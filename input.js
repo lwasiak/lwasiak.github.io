@@ -289,8 +289,15 @@ function cbRadialBlur(s) {
     s.checked = radialBlur;
 
     gl.useProgram(shaderRadialBlurProgram);
-    gl.uniform1i(shaderRadialBlurProgram.useRadialUniform, radialBlur);
     gl.uniform1f(shaderRadialBlurProgram.speedUniform, speed);
+}
+
+/**
+    Called on change of motion blur checkbox
+*/
+function cbMotionBlur(s) {
+    motionBlur = !motionBlur;
+    s.checked = motionBlur;
 }
 
 /**

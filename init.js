@@ -71,7 +71,9 @@ var shaderShadowProgram;
 var shaderDofProgram;
 var shaderHorizontalBlurDOFProgram;
 var shaderVerticalBlurDOFProgram;
+var shaderMotionBlurProgram;
 var shaderRadialBlurProgram;
+var shaderScreenProgram;
 
 var vertexTextureUnits;
 
@@ -439,6 +441,34 @@ function initShaders() {
 
 //----------------------------------------------------
 
+    fragmentShader = getShader(gl, "fragMotionBlur");
+    vertexShader = getShader(gl, "vertBlur");
+
+    shaderMotionBlurProgram = gl.createProgram();
+    gl.attachShader(shaderMotionBlurProgram, vertexShader);
+    gl.attachShader(shaderMotionBlurProgram, fragmentShader);
+    gl.linkProgram(shaderMotionBlurProgram);
+
+    if (!gl.getProgramParameter(shaderMotionBlurProgram, gl.LINK_STATUS)) {
+        alert("Motion blur: Could not initialise shaders");
+    }
+
+    gl.useProgram(shaderMotionBlurProgram);
+
+    shaderMotionBlurProgram.vertexPositionAttribute = gl.getAttribLocation(shaderMotionBlurProgram, "aVertexPosition");
+
+    shaderMotionBlurProgram.samplerUniform = gl.getUniformLocation(shaderMotionBlurProgram, "uSampler");
+    shaderMotionBlurProgram.copyTextureSamplerAUniform = gl.getUniformLocation(shaderMotionBlurProgram, "uCopyTextureSamplerA");
+    shaderMotionBlurProgram.copyTextureSamplerBUniform = gl.getUniformLocation(shaderMotionBlurProgram, "uCopyTextureSamplerB");
+    shaderMotionBlurProgram.copyTextureSamplerCUniform = gl.getUniformLocation(shaderMotionBlurProgram, "uCopyTextureSamplerC");
+    shaderMotionBlurProgram.copyTextureSamplerDUniform = gl.getUniformLocation(shaderMotionBlurProgram, "uCopyTextureSamplerD");
+    shaderMotionBlurProgram.copyTextureSamplerEUniform = gl.getUniformLocation(shaderMotionBlurProgram, "uCopyTextureSamplerE");
+
+    gl.deleteShader(vertexShader);
+    gl.deleteShader(fragmentShader);
+
+//----------------------------------------------------
+
     fragmentShader = getShader(gl, "fragRadialBlur");
     vertexShader = getShader(gl, "vertBlur");
 
@@ -457,10 +487,31 @@ function initShaders() {
 
     shaderRadialBlurProgram.samplerUniform = gl.getUniformLocation(shaderRadialBlurProgram, "uSampler");
     shaderRadialBlurProgram.speedUniform = gl.getUniformLocation(shaderRadialBlurProgram, "uSpeed");
-    shaderRadialBlurProgram.useRadialUniform = gl.getUniformLocation(shaderRadialBlurProgram, "uUseRadial");
 
-    gl.uniform1i(shaderRadialBlurProgram.useRadialUniform, radialBlur);
     gl.uniform1f(shaderRadialBlurProgram.speedUniform, speed);
+
+    gl.deleteShader(vertexShader);
+    gl.deleteShader(fragmentShader);
+
+    //----------------------------------------------------
+
+    fragmentShader = getShader(gl, "fragScreen");
+    vertexShader = getShader(gl, "vertScreen");
+
+    shaderScreenProgram = gl.createProgram();
+    gl.attachShader(shaderScreenProgram, vertexShader);
+    gl.attachShader(shaderScreenProgram, fragmentShader);
+    gl.linkProgram(shaderScreenProgram);
+
+    if (!gl.getProgramParameter(shaderScreenProgram, gl.LINK_STATUS)) {
+        alert("Screen: Could not initialise shaders");
+    }
+
+    gl.useProgram(shaderScreenProgram);
+
+    shaderScreenProgram.vertexPositionAttribute = gl.getAttribLocation(shaderScreenProgram, "aVertexPosition");
+
+    shaderScreenProgram.samplerUniform = gl.getUniformLocation(shaderScreenProgram, "uSampler");
 
     gl.deleteShader(vertexShader);
     gl.deleteShader(fragmentShader);
@@ -483,6 +534,12 @@ var blurHorizontalSceneTexture;
 
 var blurVerticalSceneFramebuffer;
 var blurVerticalSceneTexture;
+
+var motionBlurFramebuffer;
+var motionBlurTexture;
+
+var radialBlurFramebuffer;
+var radialBlurTexture;
 
 /**
     Checks if FBO is correctly created
@@ -546,17 +603,7 @@ function attachTextureToFBO(fbo, texture, textureWidth, textureHeight) {
 /**
     Initializes FBOs with proper texture and size
 */
-
-var copyTexture;
 function initFramebuffers() {
-        copyTexture = gl.createTexture();
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, copyTexture);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);   
-
     sceneFramebuffer = gl.createFramebuffer();
     sceneTexture = gl.createTexture();
     attachTextureToFBO(sceneFramebuffer, sceneTexture, screenWidth, screenHeight);
@@ -576,6 +623,14 @@ function initFramebuffers() {
     blurVerticalSceneFramebuffer = gl.createFramebuffer();
     blurVerticalSceneTexture = gl.createTexture();
     attachTextureToFBO(blurVerticalSceneFramebuffer, blurVerticalSceneTexture, screenWidth, screenHeight);
+
+    motionBlurFramebuffer = gl.createFramebuffer();
+    motionBlurTexture = gl.createTexture();
+    attachTextureToFBO(motionBlurFramebuffer, motionBlurTexture, screenWidth, screenHeight);
+
+    radialBlurFramebuffer = gl.createFramebuffer();
+    radialBlurTexture = gl.createTexture();
+    attachTextureToFBO(radialBlurFramebuffer, radialBlurTexture, screenWidth, screenHeight);
 }
 
 /**
@@ -632,6 +687,15 @@ var treeTextures = [];
 var skyboxTexture;
 var bumpMapTexture;
 var windTextures = [];
+var copiedTextures = [];
+var currentCopyTexture = 0;
+
+function changeCopyTexture() {
+    currentCopyTexture++;
+    if (currentCopyTexture == 5) {
+        currentCopyTexture = 0;
+    }
+}
 
 /**
     Loads and creates textures from files
@@ -707,6 +771,16 @@ function initTextures() {
                        ["assets/negz.png", gl.TEXTURE_CUBE_MAP_NEGATIVE_Z]];
     skyboxTexture = gl.createTexture();
     loadCubeMap(skyboxTexture, skyboxFaces);
+
+    for (var i = 0; i < 5; i++) {
+        copiedTextures[i] = gl.createTexture();
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, copiedTextures[i]);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);     
+    }
 }
 
 /**

@@ -918,6 +918,38 @@ body {
     }
 </script>
 
+<script id="fragMotionBlur" type="x-shader/x-fragment">
+/**
+    Fragment shader used to add motion blur
+*/
+
+    precision mediump float;
+
+    uniform sampler2D uSampler;
+    uniform sampler2D uCopyTextureSamplerA;
+    uniform sampler2D uCopyTextureSamplerB;
+    uniform sampler2D uCopyTextureSamplerC;
+    uniform sampler2D uCopyTextureSamplerD;
+    uniform sampler2D uCopyTextureSamplerE;
+
+    varying vec2 vTextureCoord;
+
+    void main(void) {
+        vec4 copiedTextureA = texture2D(uCopyTextureSamplerA, vTextureCoord);
+        vec4 copiedTextureB = texture2D(uCopyTextureSamplerB, vTextureCoord);
+        vec4 copiedTextureC = texture2D(uCopyTextureSamplerC, vTextureCoord);
+        vec4 copiedTextureD = texture2D(uCopyTextureSamplerD, vTextureCoord);
+        vec4 copiedTextureE = texture2D(uCopyTextureSamplerE, vTextureCoord);
+
+        gl_FragColor = texture2D(uSampler, vTextureCoord);
+        gl_FragColor = mix(gl_FragColor, copiedTextureA, 0.4);
+        gl_FragColor = mix(gl_FragColor, copiedTextureB, 0.45);
+        gl_FragColor = mix(gl_FragColor, copiedTextureC, 0.5);
+        gl_FragColor = mix(gl_FragColor, copiedTextureD, 0.55);
+        gl_FragColor = mix(gl_FragColor, copiedTextureE, 0.6);
+    }
+</script>
+
 <script id="fragRadialBlur" type="x-shader/x-fragment">
 /**
     Fragment shader used to add radial blur
@@ -927,7 +959,6 @@ body {
 
     uniform sampler2D uSampler;             /**< Texture rendered with previous pass */
     uniform float uSpeed;                   /**< Camera movement speed */
-    uniform bool uUseRadial;                /**< Apply radial blur */
 
     varying vec2 vTextureCoord;
 
@@ -936,7 +967,7 @@ body {
     const float offset = 1.0 / 768.0;       /**< How much to move to take next texture sample */
 
     void main(void) {
-        if (uUseRadial == true && uSpeed > 0.1) {
+        if (uSpeed > 0.1) {
             vec4 color = texture2D(uSampler, vTextureCoord);
 
             /**
@@ -974,9 +1005,43 @@ body {
 
 <!-- ____________________________________________________________ -->
 
+<script id="vertScreen" type="x-shader/x-vertex">
+/**
+    Vertex shader used to draw texture on screen
+*/
+
+    attribute vec3 aVertexPosition;
+
+    varying vec2 vTextureCoord;
+
+    const vec2 v2 = vec2(0.5, 0.5);
+
+    void main(void) {
+        vTextureCoord = aVertexPosition.xy * v2 + v2;
+        gl_Position = vec4(aVertexPosition.xy, 0.0, 1.0);
+    }
+</script>
+
+<script id="fragScreen" type="x-shader/x-fragment">
+/**
+    Fragment shader used to draw texture on screen
+*/
+
+    precision mediump float;
+
+    uniform sampler2D uSampler;             /**< Texture to be drawn on screen */
+
+    varying vec2 vTextureCoord;
+
+    void main(void) {
+        gl_FragColor = texture2D(uSampler, vTextureCoord);
+    }
+</script>
+
+<!-- ____________________________________________________________ -->
+
 <script type="text/javascript">
     var gl;
-
     var g_FPS = 0;
 
     function redraw() {
@@ -998,9 +1063,9 @@ body {
         */
         drawScene();
         /**
-            Add postprocessing effects
+            Add postprocessing effects and draw scene on screen
         */
-        drawSceneFramebuffer();
+        drawOnScreen();
     }
 
     /**
@@ -1479,6 +1544,9 @@ body {
 
     <br />
     <input type="checkbox" id="radialBlur" onchange="cbRadialBlur(this)" checked /> Use Radial Blur<br />
+
+    <br />
+    <input type="checkbox" id="motionBlur" onchange="cbMotionBlur(this)" checked /> Use Motion Blur<br />
 
     <br />
     <input type="checkbox" id="depthOfField" onchange="cbDepthOfField(this)" checked /> Use Depth of Field<br />
