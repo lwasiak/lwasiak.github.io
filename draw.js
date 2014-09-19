@@ -36,7 +36,7 @@ var rain = false;
 var rainDensity = 10000;
 var rainDropsWidth = 3.0;
 var grayed = 0.0;
-var skybox = false;
+var skybox = true;
 
 var radialBlur = false;
 
