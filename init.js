@@ -459,12 +459,6 @@ function initShaders() {
     shaderRadialBlurProgram.speedUniform = gl.getUniformLocation(shaderRadialBlurProgram, "uSpeed");
     shaderRadialBlurProgram.useRadialUniform = gl.getUniformLocation(shaderRadialBlurProgram, "uUseRadial");
 
-    shaderRadialBlurProgram.copyTextureSamplerAUniform = gl.getUniformLocation(shaderRadialBlurProgram, "uCopyTextureSamplerA");
-    shaderRadialBlurProgram.copyTextureSamplerBUniform = gl.getUniformLocation(shaderRadialBlurProgram, "uCopyTextureSamplerB");
-    shaderRadialBlurProgram.copyTextureSamplerCUniform = gl.getUniformLocation(shaderRadialBlurProgram, "uCopyTextureSamplerC");
-    shaderRadialBlurProgram.copyTextureSamplerDUniform = gl.getUniformLocation(shaderRadialBlurProgram, "uCopyTextureSamplerD");
-    shaderRadialBlurProgram.copyTextureSamplerEUniform = gl.getUniformLocation(shaderRadialBlurProgram, "uCopyTextureSamplerE");
-
     gl.uniform1i(shaderRadialBlurProgram.useRadialUniform, radialBlur);
     gl.uniform1f(shaderRadialBlurProgram.speedUniform, speed);
 
@@ -553,25 +547,15 @@ function attachTextureToFBO(fbo, texture, textureWidth, textureHeight) {
     Initializes FBOs with proper texture and size
 */
 
-var copiedTextures = [];
-var currentCopyTexture = 0;
-function changeCopyTexture() {
-    currentCopyTexture++;
-    if (currentCopyTexture == 5) {
-        currentCopyTexture = 0;
-    }
-}
-
+var copyTexture;
 function initFramebuffers() {
-    for (var i = 0; i < 5; i++) {
-        copiedTextures[i] = gl.createTexture();
+        copyTexture = gl.createTexture();
         gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, copiedTextures[i]);
+        gl.bindTexture(gl.TEXTURE_2D, copyTexture);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);     
-    }
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);   
 
     sceneFramebuffer = gl.createFramebuffer();
     sceneTexture = gl.createTexture();
