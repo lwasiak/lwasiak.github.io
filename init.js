@@ -75,6 +75,8 @@ var shaderMotionBlurProgram;
 var shaderRadialBlurProgram;
 var shaderScreenProgram;
 
+var shaderSphereProgram;
+
 var vertexTextureUnits;
 
 function initShaders() {
@@ -101,7 +103,6 @@ function initShaders() {
     */
     vertexTextureUnits = gl.getParameter(gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS);
     
-    var fragmentShader = getShader(gl, "fragGrass");
     var vertexShaderID = "vertGrass";
     if (vertexTextureUnits == 0) {
         vertexShaderID = "vertGrassNoSampler";
@@ -109,6 +110,7 @@ function initShaders() {
         document.getElementById("wind").disabled = true;
     }
     var vertexShader = getShader(gl, vertexShaderID);
+    var fragmentShader = getShader(gl, "fragGrass");
 
     /**
         Create program and get all attributes and uniforms locations
@@ -168,8 +170,8 @@ function initShaders() {
     
 //----------------------------------------------------
 
-    fragmentShader = getShader(gl, "fragGround");
     vertexShader = getShader(gl, "vertGround");
+    fragmentShader = getShader(gl, "fragGround");
 
     shaderGroundProgram = gl.createProgram();
     gl.attachShader(shaderGroundProgram, vertexShader);
@@ -215,12 +217,12 @@ function initShaders() {
 
 //----------------------------------------------------
 
-    fragmentShader = getShader(gl, "fragTree");
     vertexShaderID = "vertTree";
     if (vertexTextureUnits == 0) {
         vertexShaderID = "vertTreeNoSampler";
     }
     vertexShader = getShader(gl, vertexShaderID);
+    fragmentShader = getShader(gl, "fragTree");
 
     shaderTreeProgram = gl.createProgram();
     gl.attachShader(shaderTreeProgram, vertexShader);
@@ -275,8 +277,8 @@ function initShaders() {
 
 //----------------------------------------------------
 
-    fragmentShader = getShader(gl, "fragSkybox");
     vertexShader = getShader(gl, "vertSkybox");
+    fragmentShader = getShader(gl, "fragSkybox");
 
     shaderSkyboxProgram = gl.createProgram();
     gl.attachShader(shaderSkyboxProgram, vertexShader);
@@ -305,8 +307,8 @@ function initShaders() {
 
 //----------------------------------------------------
 
-    fragmentShader = getShader(gl, "fragRain");
     vertexShader = getShader(gl, "vertRain");
+    fragmentShader = getShader(gl, "fragRain");
 
     shaderRainProgram = gl.createProgram();
     gl.attachShader(shaderRainProgram, vertexShader);
@@ -334,8 +336,41 @@ function initShaders() {
 
 //----------------------------------------------------
 
-    fragmentShader = getShader(gl, "fragShadow");
+    vertexShader = getShader(gl, "vertSphere");
+    fragmentShader = getShader(gl, "fragSphere");
+
+    shaderSphereProgram = gl.createProgram();
+    gl.attachShader(shaderSphereProgram, vertexShader);
+    gl.attachShader(shaderSphereProgram, fragmentShader);
+    gl.linkProgram(shaderSphereProgram);
+
+    if (!gl.getProgramParameter(shaderSphereProgram, gl.LINK_STATUS)) {
+        alert("Sphere: Could not initialise shaders");
+    }
+
+    gl.useProgram(shaderSphereProgram);
+
+    shaderSphereProgram.vertexPositionAttribute = gl.getAttribLocation(shaderSphereProgram, "aVertexPosition");
+    shaderSphereProgram.vertexNormalAttribute = gl.getAttribLocation(shaderSphereProgram, "aVertexNormal");
+
+    shaderSphereProgram.pMatrixUniform = gl.getUniformLocation(shaderSphereProgram, "uPMatrix");
+    shaderSphereProgram.mvMatrixUniform = gl.getUniformLocation(shaderSphereProgram, "uMVMatrix");
+    shaderSphereProgram.camMatrixUniform = gl.getUniformLocation(shaderSphereProgram, "uCamMatrix");
+    shaderSphereProgram.nMatrixUniform = gl.getUniformLocation(shaderSphereProgram, "uNMatrix");
+    shaderSphereProgram.cameraPositionUniform = gl.getUniformLocation(shaderSphereProgram, "uCameraPosition");
+    shaderSphereProgram.samplerUniform = gl.getUniformLocation(shaderSphereProgram, "uSampler");
+    shaderSphereProgram.rainDensityUniform = gl.getUniformLocation(shaderSphereProgram, "uRainDensity");
+
+    gl.uniformMatrix4fv(shaderSphereProgram.pMatrixUniform, false, pSceneMatrix);
+    gl.uniform1f(shaderSphereProgram.rainDensityUniform, grayed);
+
+    gl.deleteShader(vertexShader);
+    gl.deleteShader(fragmentShader);
+
+//----------------------------------------------------
+
     vertexShader = getShader(gl, "vertShadow");
+    fragmentShader = getShader(gl, "fragShadow");
 
     shaderShadowProgram = gl.createProgram();
     gl.attachShader(shaderShadowProgram, vertexShader);
@@ -362,8 +397,8 @@ function initShaders() {
 
 //----------------------------------------------------
 
-    fragmentShader = getShader(gl, "fragDof");
     vertexShader = getShader(gl, "vertDof");
+    fragmentShader = getShader(gl, "fragDof");
 
     shaderDofProgram = gl.createProgram();
     gl.attachShader(shaderDofProgram, vertexShader);
@@ -393,8 +428,8 @@ function initShaders() {
 
 //----------------------------------------------------
 
-    fragmentShader = getShader(gl, "fragHorizontalBlurDOF");
     vertexShader = getShader(gl, "vertBlur");
+    fragmentShader = getShader(gl, "fragHorizontalBlurDOF");
 
     shaderHorizontalBlurDOFProgram = gl.createProgram();
     gl.attachShader(shaderHorizontalBlurDOFProgram, vertexShader);
@@ -417,8 +452,8 @@ function initShaders() {
 
 //----------------------------------------------------
 
-    fragmentShader = getShader(gl, "fragVerticalBlurDOF");
     vertexShader = getShader(gl, "vertBlur");
+    fragmentShader = getShader(gl, "fragVerticalBlurDOF");
 
     shaderVerticalBlurDOFProgram = gl.createProgram();
     gl.attachShader(shaderVerticalBlurDOFProgram, vertexShader);
@@ -441,8 +476,8 @@ function initShaders() {
 
 //----------------------------------------------------
 
-    fragmentShader = getShader(gl, "fragMotionBlur");
     vertexShader = getShader(gl, "vertBlur");
+    fragmentShader = getShader(gl, "fragMotionBlur");
 
     shaderMotionBlurProgram = gl.createProgram();
     gl.attachShader(shaderMotionBlurProgram, vertexShader);
@@ -468,10 +503,10 @@ function initShaders() {
     gl.deleteShader(fragmentShader);
 
 //----------------------------------------------------
-
-    fragmentShader = getShader(gl, "fragRadialBlur");
+    
     vertexShader = getShader(gl, "vertBlur");
-
+    fragmentShader = getShader(gl, "fragRadialBlur");
+    
     shaderRadialBlurProgram = gl.createProgram();
     gl.attachShader(shaderRadialBlurProgram, vertexShader);
     gl.attachShader(shaderRadialBlurProgram, fragmentShader);
@@ -495,8 +530,8 @@ function initShaders() {
 
     //----------------------------------------------------
 
-    fragmentShader = getShader(gl, "fragScreen");
     vertexShader = getShader(gl, "vertScreen");
+    fragmentShader = getShader(gl, "fragScreen");
 
     shaderScreenProgram = gl.createProgram();
     gl.attachShader(shaderScreenProgram, vertexShader);
@@ -688,19 +723,20 @@ var skyboxTexture;
 var bumpMapTexture;
 var windTextures = [];
 var copiedTextures = [];
-var currentCopyTexture = 0;
 
-function changeCopyTexture() {
-    currentCopyTexture++;
-    if (currentCopyTexture == 5) {
-        currentCopyTexture = 0;
-    }
-}
+var sphereTexture;
 
 /**
     Loads and creates textures from files
 */
 function initTextures() {  
+    sphereTexture = gl.createTexture();
+    sphereTexture.image = new Image();
+    sphereTexture.image.onload = function () {
+        handleLoadedTexture(sphereTexture, gl.CLAMP_TO_EDGE);
+    }
+    sphereTexture.image.src = "assets/sphere.jpg";
+
     grassTexture = gl.createTexture();
     grassTexture.image = new Image();
     grassTexture.image.onload = function () {
@@ -887,7 +923,60 @@ function initBuffers() {
     if (rain) {
         resetRain();
     }
+
+    initSphere();
 }
+
+var sphereVertexPositionBuffer;
+var sphereIndicesBuffer;
+
+function initSphere() {
+    var latitudeBands = 50;
+    var longitudeBands = 50;
+    var radius = 10;
+
+    var vertexPositionData = [];
+
+    for (var latNumber = 0; latNumber <= latitudeBands; latNumber++) {
+        var theta = latNumber * Math.PI / latitudeBands;
+        var sinTheta = Math.sin(theta);
+        var cosTheta = Math.cos(theta);
+        for (var longNumber = 0; longNumber <= longitudeBands; longNumber++) {
+            var phi = longNumber * 2 * Math.PI / longitudeBands;
+            var sinPhi = Math.sin(phi);
+            var cosPhi = Math.cos(phi);
+            var x = cosPhi * sinTheta;
+            var y = cosTheta;
+            var z = sinPhi * sinTheta;
+            var u = 1 - (longNumber / longitudeBands);
+            var v = 1 - (latNumber / latitudeBands);
+
+            vertexPositionData.push(radius * x, radius * y, radius * z, x, y, z, u, v);
+        }
+    }
+
+    var indexData = [];
+    for (var latNumber = 0; latNumber < latitudeBands; latNumber++) {
+        for (var longNumber = 0; longNumber < longitudeBands; longNumber++) {
+            var first = (latNumber * (longitudeBands + 1)) + longNumber;
+            var second = first + longitudeBands + 1;
+            indexData.push(first, second, first + 1, second, second + 1, first + 1);
+        }
+    }
+
+    sphereVertexPositionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, sphereVertexPositionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexPositionData), gl.STATIC_DRAW);
+    sphereVertexPositionBuffer.itemSize = 8;
+    sphereVertexPositionBuffer.numItems = vertexPositionData.length / 8;
+
+    sphereIndicesBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sphereIndicesBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indexData), gl.STATIC_DRAW);
+    sphereIndicesBuffer.itemSize = 1;
+    sphereIndicesBuffer.numItems = indexData.length;    
+}
+
 
 /**
     Creates array with grass cluster vertices

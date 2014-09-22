@@ -18,13 +18,13 @@ var terrainHeight = 20.0;
 
 var batchGrass = true;
 var grassBendFactor = 0.75;
-var grassDensity = 10.0;
+var grassDensity = 2.5;
 
 var batchFlower  = [true, true];
 var flowerBendFactor = [0.5, 0.4];
-var flowerDensity = [10.0, 10.0];
+var flowerDensity = [5.3, 4.7];
 
-var numberOfTrees = 0;
+var numberOfTrees = 6;
 var treeScale = [0.25, 0.2, 0.25, 0.27, 0.25, 0.22];
 var treeXPos = [45.0, 20.0, 80.0, 30.0, 40.0, 90.0];
 var treeZPos = [-30.0, -60.0, -60.0, -90.0, -95.0, -10.0];
@@ -36,19 +36,19 @@ var rain = false;
 var rainDensity = 10000;
 var rainDropsWidth = 3.0;
 var grayed = 0.0;
-var skybox = false;
+var skybox = true;
 
 var radialBlur = false;
 
 var motionBlur = false;
 
-var DOFQuality = 1.0;
 var depthOfField = false;
+var DOFQuality = 0.5;
 var dofSettings = [0.1, 0.3, 0.5];
 
-var shadowMapQuality = 0.5;
 var shadows = false;
 var softShadows = false;
+var shadowMapQuality = 0.5;
 
 var lighting = false;
 var lightLocation = [10.0, 30.0, 20.0];
@@ -381,11 +381,52 @@ function drawScene() {
     if (skybox) {
         drawSkybox();
     }
+    
+    drawSphere();
 
     if (rain) {
         drawRain();
     }
 }
+
+
+function drawSphere() {
+    gl.useProgram(shaderSphereProgram);
+
+    gl.uniformMatrix4fv(shaderSphereProgram.camMatrixUniform, false, camSceneMatrix);
+    gl.uniform3f(shaderSphereProgram.cameraPositionUniform, camXPos, camYPos, camZPos);
+    
+    gl.enableVertexAttribArray(shaderSphereProgram.vertexPositionAttribute);
+    gl.enableVertexAttribArray(shaderSphereProgram.vertexNormalAttribute);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, sphereVertexPositionBuffer);
+    gl.vertexAttribPointer(shaderSphereProgram.vertexPositionAttribute, 3, gl.FLOAT, gl.FALSE, 8 * 4, 0);
+    gl.vertexAttribPointer(shaderSphereProgram.vertexNormalAttribute, 3, gl.FLOAT, gl.FALSE, 8 * 4, 3 * 4);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, skyboxTexture);
+    gl.uniform1i(shaderSphereProgram.samplerUniform, 0);
+
+    mat4.identity(mvSceneMatrix);
+    mat4.translate(mvSceneMatrix, mvSceneMatrix, [64.0, 40.0, -64.0]);
+    mat4.rotateY(mvSceneMatrix, mvSceneMatrix, degToRad(totalTime));
+
+    var normalMatrix = mat3.create();
+    mat3.normalFromMat4(normalMatrix, mvSceneMatrix);
+
+    gl.uniformMatrix4fv(shaderSphereProgram.mvMatrixUniform, false, mvSceneMatrix);
+    gl.uniformMatrix3fv(shaderSphereProgram.nMatrixUniform, false, normalMatrix);
+    
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sphereIndicesBuffer);
+    gl.drawElements(gl.TRIANGLES, sphereIndicesBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+
+    gl.disableVertexAttribArray(shaderSphereProgram.vertexPositionAttribute);
+    gl.disableVertexAttribArray(shaderSphereProgram.vertexNormalAttribute);
+}
+
 
 /**
     Draws ground in color
@@ -675,7 +716,7 @@ function drawTree() {
         }
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, treeIndicesBuffer[i]);
-        gl.drawElements(gl.TRIANGLES, treeIndicesBuffer[i].numItems, gl.UNSIGNED_SHORT, 0);     
+        gl.drawElements(gl.TRIANGLES, treeIndicesBuffer[i].numItems, gl.UNSIGNED_SHORT, 0);
     }
 
     gl.activeTexture(gl.TEXTURE0);
@@ -765,6 +806,14 @@ function drawRain() {
     gl.disable(gl.BLEND);
 }
 
+var currentCopyTexture = 0;
+function changeCopyTexture() {
+    currentCopyTexture++;
+    if (currentCopyTexture == 5) {
+        currentCopyTexture = 0;
+    }
+}
+
 /**
     Saves texture drawn by last framebuffer to use it by motion blur
 */
@@ -772,7 +821,7 @@ function saveTexture() {
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, copiedTextures[currentCopyTexture]);
     gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, screenWidth, screenHeight, 0);
-    changeCopyTexture();    
+    changeCopyTexture();  
 }
 
 /**
@@ -940,9 +989,7 @@ function drawRadialBlur() {
 
     gl.enableVertexAttribArray(shaderRadialBlurProgram.vertexPositionAttribute);
 
-    if (radialBlur) {
-        gl.uniform1f(shaderRadialBlurProgram.speedUniform, speed);
-    }
+    gl.uniform1f(shaderRadialBlurProgram.speedUniform, speed);
 
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, textureToDraw);

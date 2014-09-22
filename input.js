@@ -134,7 +134,7 @@ function setInputValues() {
 
     document.getElementById("radialBlur").checked = radialBlur;
 
-    document.getElementById("radialBlur").checked = motionBlur;
+    document.getElementById("motionBlur").checked = motionBlur;
 
     document.getElementById("depthOfField").checked = depthOfField;
     document.getElementById("near").value = dofSettings[0];
@@ -257,6 +257,8 @@ function cbRain(s) {
     gl.uniform1f(shaderTreeProgram.rainDensityUniform, grayed);
     gl.useProgram(shaderSkyboxProgram);
     gl.uniform1f(shaderSkyboxProgram.rainDensityUniform, grayed);
+    gl.useProgram(shaderSphereProgram);
+    gl.uniform1f(shaderSphereProgram.rainDensityUniform, grayed);
 }
 
 /**
@@ -273,6 +275,8 @@ function moveRainSlider(s) {
     gl.uniform1f(shaderTreeProgram.rainDensityUniform, grayed);
     gl.useProgram(shaderSkyboxProgram);
     gl.uniform1f(shaderSkyboxProgram.rainDensityUniform, grayed);
+    gl.useProgram(shaderSphereProgram);
+    gl.uniform1f(shaderSphereProgram.rainDensityUniform, grayed);
 }
 
 /**

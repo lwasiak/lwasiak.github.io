@@ -668,6 +668,54 @@ body {
 
 <!-- ____________________________________________________________ -->
 
+<script id="vertSphere" type="x-shader/x-vertex">
+    attribute vec3 aVertexPosition;
+    attribute vec3 aVertexNormal;
+
+    uniform mat4 uMVMatrix;                 /**< Model view matrix */
+    uniform mat4 uCamMatrix;                /**< Eye camera position matrix */
+    uniform mat4 uPMatrix;                  /**< Perspective matrix */
+    uniform mat3 uNMatrix;                  /**< Normal matrix */
+
+    uniform vec3 uCameraPosition;
+
+    varying vec3 vTextureCoord;
+
+    const vec3 v3 = vec3(0.5, 0.5, 0.5);
+    
+    void main(void) {
+        vec4 position = uMVMatrix * vec4(aVertexPosition, 1.0);
+        gl_Position = uPMatrix * uCamMatrix * position;
+
+        /* Calculate incident ray for environment mapping. */
+        vec3 incidentRay = normalize(position.xyz - uCameraPosition);
+        vec3 vTransformedNormal = uNMatrix * aVertexNormal;
+
+        /* Calculate reflected ray for environment mapping and pass it to fragment shader. */
+        vTextureCoord = reflect(incidentRay, normalize(vTransformedNormal));
+    }
+</script>
+
+<script id="fragSphere" type="x-shader/x-fragment">
+    precision mediump float;
+
+    uniform samplerCube uSampler;                       /**< Cube texture to apply on the sky */
+    uniform float uRainDensity;                         /**< Intensivity of rain */
+
+    varying vec3 vTextureCoord;
+
+    const vec3 grey = vec3(0.5, 0.5, 0.5);              /**< Gray color in RGB used when it's raining */
+    const vec3 sphereColor = vec3(0.3, 0.3, 0.3);
+
+    void main(void) {
+        vec4 texture = textureCube(uSampler, vTextureCoord);
+        gl_FragColor = mix(texture, vec4(grey, 1.0), uRainDensity);
+        gl_FragColor = mix(gl_FragColor, vec4(sphereColor, 1.0), 0.5);
+    }
+</script>
+
+<!-- ____________________________________________________________ -->
+
 <script id="vertShadow" type="x-shader/x-vertex">
 /**
     Vertex shader used to draw shadow map
@@ -941,6 +989,9 @@ body {
         vec4 copiedTextureD = texture2D(uCopyTextureSamplerD, vTextureCoord);
         vec4 copiedTextureE = texture2D(uCopyTextureSamplerE, vTextureCoord);
 
+        /**
+            Mix current scene with previous ones
+        */
         gl_FragColor = texture2D(uSampler, vTextureCoord);
         gl_FragColor = mix(gl_FragColor, copiedTextureA, 0.4);
         gl_FragColor = mix(gl_FragColor, copiedTextureB, 0.45);
