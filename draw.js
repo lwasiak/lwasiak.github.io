@@ -408,7 +408,7 @@ function drawSphere() {
     gl.uniform1i(shaderSphereProgram.samplerUniform, 0);
 
     mat4.identity(mvSceneMatrix);
-    mat4.translate(mvSceneMatrix, mvSceneMatrix, [64.0, 30.0, -64.0]);
+    mat4.translate(mvSceneMatrix, mvSceneMatrix, [48.0, 25.0, -64.0]);
     mat4.rotateY(mvSceneMatrix, mvSceneMatrix, degToRad(totalTime));
 
     var normalMatrix = mat3.create();
