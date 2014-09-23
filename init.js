@@ -957,8 +957,8 @@ var sphereVertexPositionBuffer;
 var sphereIndicesBuffer;
 
 function initSphere() {
-    var latitudeBands = 50;
-    var longitudeBands = 50;
+    var latitudeBands = 30;
+    var longitudeBands = 30;
 
     var vertexPositionData = [];
 

@@ -65,17 +65,19 @@ body {
 
         gl_Position = uPMatrix * uCamMatrix * vLightPosition;
 
-        /**
-            Count distance from shadow camera to vertex and coordinate to sample shadow map.
-            If vertex is not visible on shadow map set max distance.
-        */
-        vec4 shadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
-        vec4 shadowCoordinateWdivide = shadowPosition / shadowPosition.w;
-        vShadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
-        if (vShadowCoord.x < 0.0 || vShadowCoord.x > 1.0 || vShadowCoord.y < 0.0 || vShadowCoord.y > 1.0) {
-            vShadowDistance = 100.0;
-        } else {
-            vShadowDistance = shadowPosition.z * 0.005;
+        if (uUseShadows) {
+            /**
+                Count distance from shadow camera to vertex and coordinate to sample shadow map.
+                If vertex is not visible on shadow map set max distance.
+            */
+            vec4 shadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
+            vec4 shadowCoordinateWdivide = shadowPosition / shadowPosition.w;
+            vShadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
+            if (vShadowCoord.x < 0.0 || vShadowCoord.x > 1.0 || vShadowCoord.y < 0.0 || vShadowCoord.y > 1.0) {
+                vShadowDistance = 100.0;
+            } else {
+                vShadowDistance = shadowPosition.z * 0.005;
+            }            
         }
 
         /**
@@ -250,6 +252,8 @@ body {
     uniform mat4 uPMatrix;              /**< Perspective matrix */
     uniform mat4 uShadowCamMatrix;      /**< Shadow camera position matrix */
 
+    uniform bool uUseShadows;           /**< Apply shadows to the object */
+
     varying vec2 vTextureCoord;
     varying vec4 vLightPosition;        /**< Position of point light from current vertex */
     varying vec2 vShadowCoord;          /**< Coordinates used to sample shadow map */
@@ -261,17 +265,19 @@ body {
         vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
         gl_Position = uPMatrix * uCamMatrix * vLightPosition;
 
-        /**
-            Count distance from shadow camera to vertex and coordinate to sample shadow map.
-            If vertex is not visible on shadow map set max distance.
-        */
-        vec4 shadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
-        vec4 shadowCoordinateWdivide = shadowPosition / shadowPosition.w;
-        vShadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
-        if (vShadowCoord.x < 0.0 || vShadowCoord.x > 1.0 || vShadowCoord.y < 0.0 || vShadowCoord.y > 1.0) {
-            vShadowDistance = 100.0;
-        } else {
-            vShadowDistance = shadowPosition.z * 0.005;
+        if (uUseShadows) {
+            /**
+                Count distance from shadow camera to vertex and coordinate to sample shadow map.
+                If vertex is not visible on shadow map set max distance.
+            */
+            vec4 shadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
+            vec4 shadowCoordinateWdivide = shadowPosition / shadowPosition.w;
+            vShadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
+            if (vShadowCoord.x < 0.0 || vShadowCoord.x > 1.0 || vShadowCoord.y < 0.0 || vShadowCoord.y > 1.0) {
+                vShadowDistance = 100.0;
+            } else {
+                vShadowDistance = shadowPosition.z * 0.005;
+            }            
         }
 
         /**
@@ -394,6 +400,7 @@ body {
     uniform mat3 uNMatrix;              /**< Normal matrix */
     uniform mat4 uShadowCamMatrix;      /**< Shadow camera position matrix */
 
+    uniform bool uUseShadows;           /**< Apply shadows to the object */
     uniform bool uUseWind;              /**< Move grass objects to simulate the wind */
     uniform float uTime;                /**< Time passed */
     uniform float uBendFactor;          /**< Max bend of grass caused by wind */
@@ -426,17 +433,19 @@ body {
 
         gl_Position = uPMatrix * uCamMatrix * vLightPosition;
 
-        /**
-            Count distance from shadow camera to vertex and coordinate to sample shadow map.
-            If vertex is not visible on shadow map set max distance.
-        */
-        vec4 shadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
-        vec4 shadowCoordinateWdivide = shadowPosition / shadowPosition.w;
-        vShadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
-        if (vShadowCoord.x < 0.0 || vShadowCoord.x > 1.0 || vShadowCoord.y < 0.0 || vShadowCoord.y > 1.0) {
-            vShadowDistance = 100.0;
-        } else {
-            vShadowDistance = shadowPosition.z * 0.005;
+        if (uUseShadows) {
+            /**
+                Count distance from shadow camera to vertex and coordinate to sample shadow map.
+                If vertex is not visible on shadow map set max distance.
+            */
+            vec4 shadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
+            vec4 shadowCoordinateWdivide = shadowPosition / shadowPosition.w;
+            vShadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
+            if (vShadowCoord.x < 0.0 || vShadowCoord.x > 1.0 || vShadowCoord.y < 0.0 || vShadowCoord.y > 1.0) {
+                vShadowDistance = 100.0;
+            } else {
+                vShadowDistance = shadowPosition.z * 0.005;
+            }            
         }
 
         /**
@@ -463,6 +472,8 @@ body {
     uniform mat3 uNMatrix;              /**< Normal matrix */
     uniform mat4 uShadowCamMatrix;      /**< Shadow camera position matrix */
 
+    uniform bool uUseShadows;           /**< Apply shadows to the object */
+
     varying vec2 vTextureCoord;
     varying vec3 vTransformedNormal;    /**< Normal vector in space */
     varying vec4 vLightPosition;        /**< Position of point light from current vertex */
@@ -475,17 +486,19 @@ body {
         vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
         gl_Position = uPMatrix * uCamMatrix * vLightPosition;
 
-        /**
-            Count distance from shadow camera to vertex and coordinate to sample shadow map.
-            If vertex is not visible on shadow map set max distance.
-        */
-        vec4 shadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
-        vec4 shadowCoordinateWdivide = shadowPosition / shadowPosition.w;
-        vShadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
-        if (vShadowCoord.x < 0.0 || vShadowCoord.x > 1.0 || vShadowCoord.y < 0.0 || vShadowCoord.y > 1.0) {
-            vShadowDistance = 100.0;
-        } else {
-            vShadowDistance = shadowPosition.z * 0.005;
+        if (uUseShadows) {
+            /**
+                Count distance from shadow camera to vertex and coordinate to sample shadow map.
+                If vertex is not visible on shadow map set max distance.
+            */
+            vec4 shadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
+            vec4 shadowCoordinateWdivide = shadowPosition / shadowPosition.w;
+            vShadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
+            if (vShadowCoord.x < 0.0 || vShadowCoord.x > 1.0 || vShadowCoord.y < 0.0 || vShadowCoord.y > 1.0) {
+                vShadowDistance = 100.0;
+            } else {
+                vShadowDistance = shadowPosition.z * 0.005;
+            }            
         }
 
         /**
@@ -695,6 +708,8 @@ body {
     void main(void) {
         vec4 position = uMVMatrix * vec4(aVertexPosition, 1.0);
         gl_Position = uPMatrix * uCamMatrix * position;
+
+        vec3 avpos = aVertexPosition * v3 + v3;
 
         /**
             Calculate incident ray

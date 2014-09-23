@@ -43,7 +43,7 @@ var radialBlur = false;
 var motionBlur = false;
 
 var mirrorTextureSize = 512;
-var mirrorPosition = [64.0, 35.0, -64.0]
+var mirrorPosition = [64.0, 40.0, -64.0]
 var sphereRadius = 10.0;
 
 var depthOfField = false;
@@ -941,6 +941,33 @@ function drawSphere() {
 
     gl.disableVertexAttribArray(shaderSphereProgram.vertexPositionAttribute);
     gl.disableVertexAttribArray(shaderSphereProgram.vertexNormalAttribute);
+//
+/*
+    gl.useProgram(shaderSkyboxProgram);
+
+    gl.uniformMatrix4fv(shaderSkyboxProgram.camMatrixUniform, false, camSceneMatrix);
+
+    gl.enableVertexAttribArray(shaderSkyboxProgram.vertexPositionAttribute);
+    mat4.identity(mvSceneMatrix);
+    mat4.translate(mvSceneMatrix, mvSceneMatrix, mirrorPosition);
+    mat4.scale(mvSceneMatrix, mvSceneMatrix, [0.05, 0.05, 0.05]);
+
+    gl.uniformMatrix4fv(shaderSkyboxProgram.mvMatrixUniform, false, mvSceneMatrix);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, skyboxVertexPositionBuffer);
+    gl.vertexAttribPointer(shaderSkyboxProgram.vertexPositionAttribute, skyboxVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
+    gl.uniform1i(shaderSkyboxProgram.samplerUniform, 0);
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, skyboxIndicesBuffer);
+    gl.drawElements(gl.TRIANGLES, skyboxIndicesBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+    gl.disableVertexAttribArray(shaderSkyboxProgram.vertexPositionAttribute);
+*/
 }
 
 var currentCopyTexture = 0;
