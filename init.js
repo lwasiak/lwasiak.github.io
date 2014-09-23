@@ -3,28 +3,22 @@
     @param canvas    HTML canvas element
 */
 function initGL(canvas) {
-    var gl;
-    try {
-        gl = canvas.getContext("experimental-webgl");
-        gl.viewportWidth = canvas.width;
-        gl.viewportHeight = canvas.height;
-    } catch (e) {
-    }
-    if (!gl) {
-        alert("Could not initialise WebGL, sorry :-(");
-    }
+    gl = canvas.getContext("experimental-webgl");
+    gl.viewportWidth = canvas.width;
+    gl.viewportHeight = canvas.height;
 
-    return gl;
+    if (!gl) {
+        alert("Could not initialise WebGL");
+    }
 }
 
 /**
     Gets shader text and compile it.
 
-    @param gl    WebGL context
     @param id    Shader ID
     @return      Compiled shader.
 */
-function getShader(gl, id) {
+function getShader(id) {
     var shaderScript = document.getElementById(id);
     if (!shaderScript) {
         return null;
@@ -83,7 +77,7 @@ function initShaders() {
     /**
         Count perspective matrix
     */
-    mat4.perspective(pSceneMatrix, 45, screenWidth / screenHeight, 0.1, 200.0);
+    mat4.perspective(pSceneMatrix, degToRad(45.0), screenWidth / screenHeight, 0.1, 200.0);
 
     /**
         Count shadow camera matrix
@@ -109,8 +103,8 @@ function initShaders() {
         wind = false;
         document.getElementById("wind").disabled = true;
     }
-    var vertexShader = getShader(gl, vertexShaderID);
-    var fragmentShader = getShader(gl, "fragGrass");
+    var vertexShader = getShader(vertexShaderID);
+    var fragmentShader = getShader("fragGrass");
 
     /**
         Create program and get all attributes and uniforms locations
@@ -170,8 +164,8 @@ function initShaders() {
     
 //----------------------------------------------------
 
-    vertexShader = getShader(gl, "vertGround");
-    fragmentShader = getShader(gl, "fragGround");
+    vertexShader = getShader("vertGround");
+    fragmentShader = getShader("fragGround");
 
     shaderGroundProgram = gl.createProgram();
     gl.attachShader(shaderGroundProgram, vertexShader);
@@ -221,8 +215,8 @@ function initShaders() {
     if (vertexTextureUnits == 0) {
         vertexShaderID = "vertTreeNoSampler";
     }
-    vertexShader = getShader(gl, vertexShaderID);
-    fragmentShader = getShader(gl, "fragTree");
+    vertexShader = getShader(vertexShaderID);
+    fragmentShader = getShader("fragTree");
 
     shaderTreeProgram = gl.createProgram();
     gl.attachShader(shaderTreeProgram, vertexShader);
@@ -277,8 +271,8 @@ function initShaders() {
 
 //----------------------------------------------------
 
-    vertexShader = getShader(gl, "vertSkybox");
-    fragmentShader = getShader(gl, "fragSkybox");
+    vertexShader = getShader("vertSkybox");
+    fragmentShader = getShader("fragSkybox");
 
     shaderSkyboxProgram = gl.createProgram();
     gl.attachShader(shaderSkyboxProgram, vertexShader);
@@ -307,8 +301,8 @@ function initShaders() {
 
 //----------------------------------------------------
 
-    vertexShader = getShader(gl, "vertRain");
-    fragmentShader = getShader(gl, "fragRain");
+    vertexShader = getShader("vertRain");
+    fragmentShader = getShader("fragRain");
 
     shaderRainProgram = gl.createProgram();
     gl.attachShader(shaderRainProgram, vertexShader);
@@ -336,8 +330,8 @@ function initShaders() {
 
 //----------------------------------------------------
 
-    vertexShader = getShader(gl, "vertSphere");
-    fragmentShader = getShader(gl, "fragSphere");
+    vertexShader = getShader("vertSphere");
+    fragmentShader = getShader("fragSphere");
 
     shaderSphereProgram = gl.createProgram();
     gl.attachShader(shaderSphereProgram, vertexShader);
@@ -359,18 +353,16 @@ function initShaders() {
     shaderSphereProgram.nMatrixUniform = gl.getUniformLocation(shaderSphereProgram, "uNMatrix");
     shaderSphereProgram.cameraPositionUniform = gl.getUniformLocation(shaderSphereProgram, "uCameraPosition");
     shaderSphereProgram.samplerUniform = gl.getUniformLocation(shaderSphereProgram, "uSampler");
-    shaderSphereProgram.rainDensityUniform = gl.getUniformLocation(shaderSphereProgram, "uRainDensity");
 
     gl.uniformMatrix4fv(shaderSphereProgram.pMatrixUniform, false, pSceneMatrix);
-    gl.uniform1f(shaderSphereProgram.rainDensityUniform, grayed);
 
     gl.deleteShader(vertexShader);
     gl.deleteShader(fragmentShader);
 
 //----------------------------------------------------
 
-    vertexShader = getShader(gl, "vertShadow");
-    fragmentShader = getShader(gl, "fragShadow");
+    vertexShader = getShader("vertShadow");
+    fragmentShader = getShader("fragShadow");
 
     shaderShadowProgram = gl.createProgram();
     gl.attachShader(shaderShadowProgram, vertexShader);
@@ -397,8 +389,8 @@ function initShaders() {
 
 //----------------------------------------------------
 
-    vertexShader = getShader(gl, "vertDof");
-    fragmentShader = getShader(gl, "fragDof");
+    vertexShader = getShader("vertDof");
+    fragmentShader = getShader("fragDof");
 
     shaderDofProgram = gl.createProgram();
     gl.attachShader(shaderDofProgram, vertexShader);
@@ -428,8 +420,8 @@ function initShaders() {
 
 //----------------------------------------------------
 
-    vertexShader = getShader(gl, "vertBlur");
-    fragmentShader = getShader(gl, "fragHorizontalBlurDOF");
+    vertexShader = getShader("vertBlur");
+    fragmentShader = getShader("fragHorizontalBlurDOF");
 
     shaderHorizontalBlurDOFProgram = gl.createProgram();
     gl.attachShader(shaderHorizontalBlurDOFProgram, vertexShader);
@@ -452,8 +444,8 @@ function initShaders() {
 
 //----------------------------------------------------
 
-    vertexShader = getShader(gl, "vertBlur");
-    fragmentShader = getShader(gl, "fragVerticalBlurDOF");
+    vertexShader = getShader("vertBlur");
+    fragmentShader = getShader("fragVerticalBlurDOF");
 
     shaderVerticalBlurDOFProgram = gl.createProgram();
     gl.attachShader(shaderVerticalBlurDOFProgram, vertexShader);
@@ -476,8 +468,8 @@ function initShaders() {
 
 //----------------------------------------------------
 
-    vertexShader = getShader(gl, "vertBlur");
-    fragmentShader = getShader(gl, "fragMotionBlur");
+    vertexShader = getShader("vertBlur");
+    fragmentShader = getShader("fragMotionBlur");
 
     shaderMotionBlurProgram = gl.createProgram();
     gl.attachShader(shaderMotionBlurProgram, vertexShader);
@@ -504,8 +496,8 @@ function initShaders() {
 
 //----------------------------------------------------
     
-    vertexShader = getShader(gl, "vertBlur");
-    fragmentShader = getShader(gl, "fragRadialBlur");
+    vertexShader = getShader("vertBlur");
+    fragmentShader = getShader("fragRadialBlur");
     
     shaderRadialBlurProgram = gl.createProgram();
     gl.attachShader(shaderRadialBlurProgram, vertexShader);
@@ -530,8 +522,8 @@ function initShaders() {
 
     //----------------------------------------------------
 
-    vertexShader = getShader(gl, "vertScreen");
-    fragmentShader = getShader(gl, "fragScreen");
+    vertexShader = getShader("vertScreen");
+    fragmentShader = getShader("fragScreen");
 
     shaderScreenProgram = gl.createProgram();
     gl.attachShader(shaderScreenProgram, vertexShader);
@@ -607,10 +599,11 @@ function checkFramebuffer(id) {
 /**
     Sets color and depth attachment for FBO
 
-    @param fbo          FBO variable 
-    @param texture      Texture variable 
+    @param fbo              FBO variable 
+    @param texture          Texture variable
+    @param useDepthbuffer   True if framebuffer is drawing with DEPTH_TEST enabled
 */
-function attachTextureToFBO(fbo, texture, textureWidth, textureHeight) {
+function attachTextureToFBO(fbo, texture, textureWidth, textureHeight, useDepthbuffer) {
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -620,12 +613,15 @@ function attachTextureToFBO(fbo, texture, textureWidth, textureHeight) {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureWidth, textureHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 
-    var renderbuffer = gl.createRenderbuffer();
-    gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
-    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, textureWidth, textureHeight);
-
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, renderbuffer);
+
+    if (useDepthbuffer) {
+        var renderbuffer = gl.createRenderbuffer();
+        gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
+        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, textureWidth, textureHeight);
+
+        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, renderbuffer);
+    }
 
     checkFramebuffer(fbo);
 
@@ -635,37 +631,76 @@ function attachTextureToFBO(fbo, texture, textureWidth, textureHeight) {
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
 
+var cubeFramebuffer;
+var cubeTexture;
+
 /**
     Initializes FBOs with proper texture and size
 */
 function initFramebuffers() {
     sceneFramebuffer = gl.createFramebuffer();
     sceneTexture = gl.createTexture();
-    attachTextureToFBO(sceneFramebuffer, sceneTexture, screenWidth, screenHeight);
+    attachTextureToFBO(sceneFramebuffer, sceneTexture, screenWidth, screenHeight, true);
 
     shadowFramebuffer = gl.createFramebuffer();
     shadowTexture = gl.createTexture();
-    attachTextureToFBO(shadowFramebuffer, shadowTexture, screenWidth * shadowMapQuality, screenHeight * shadowMapQuality);
+    attachTextureToFBO(shadowFramebuffer, shadowTexture, screenWidth * shadowMapQuality, screenHeight * shadowMapQuality, true);
 
     dofFramebuffer = gl.createFramebuffer();
     dofTexture = gl.createTexture();
-    attachTextureToFBO(dofFramebuffer, dofTexture, screenWidth * DOFQuality, screenHeight * DOFQuality);
+    attachTextureToFBO(dofFramebuffer, dofTexture, screenWidth * DOFQuality, screenHeight * DOFQuality, true);
 
     blurHorizontalSceneFramebuffer = gl.createFramebuffer();
     blurHorizontalSceneTexture = gl.createTexture();
-    attachTextureToFBO(blurHorizontalSceneFramebuffer, blurHorizontalSceneTexture, screenWidth, screenHeight);
+    attachTextureToFBO(blurHorizontalSceneFramebuffer, blurHorizontalSceneTexture, screenWidth, screenHeight, false);
 
     blurVerticalSceneFramebuffer = gl.createFramebuffer();
     blurVerticalSceneTexture = gl.createTexture();
-    attachTextureToFBO(blurVerticalSceneFramebuffer, blurVerticalSceneTexture, screenWidth, screenHeight);
+    attachTextureToFBO(blurVerticalSceneFramebuffer, blurVerticalSceneTexture, screenWidth, screenHeight, false);
 
     motionBlurFramebuffer = gl.createFramebuffer();
     motionBlurTexture = gl.createTexture();
-    attachTextureToFBO(motionBlurFramebuffer, motionBlurTexture, screenWidth, screenHeight);
+    attachTextureToFBO(motionBlurFramebuffer, motionBlurTexture, screenWidth, screenHeight, false);
 
     radialBlurFramebuffer = gl.createFramebuffer();
     radialBlurTexture = gl.createTexture();
-    attachTextureToFBO(radialBlurFramebuffer, radialBlurTexture, screenWidth, screenHeight);
+    attachTextureToFBO(radialBlurFramebuffer, radialBlurTexture, screenWidth, screenHeight, false);
+
+    var cubeFaces = [gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+                     gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+                     gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
+                     gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+                     gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+                     gl.TEXTURE_CUBE_MAP_NEGATIVE_Z];
+
+    cubeFramebuffer = gl.createFramebuffer();
+    cubeTexture = gl.createTexture();
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, cubeFramebuffer);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    for (var i = 0; i < 6; i++) {
+        gl.texImage2D(cubeFaces[i], 0, gl.RGBA, mirrorTextureSize, mirrorTextureSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    }
+
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X, cubeTexture, 0);
+
+    var renderbuffer = gl.createRenderbuffer();
+    gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, mirrorTextureSize, mirrorTextureSize);
+
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, renderbuffer);
+
+    checkFramebuffer(cubeFramebuffer);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+    gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
 
 /**
@@ -724,19 +759,10 @@ var bumpMapTexture;
 var windTextures = [];
 var copiedTextures = [];
 
-var sphereTexture;
-
 /**
     Loads and creates textures from files
 */
 function initTextures() {  
-    sphereTexture = gl.createTexture();
-    sphereTexture.image = new Image();
-    sphereTexture.image.onload = function () {
-        handleLoadedTexture(sphereTexture, gl.CLAMP_TO_EDGE);
-    }
-    sphereTexture.image.src = "assets/sphere.jpg";
-
     grassTexture = gl.createTexture();
     grassTexture.image = new Image();
     grassTexture.image.onload = function () {
@@ -923,7 +949,7 @@ function initBuffers() {
     if (rain) {
         resetRain();
     }
-
+    
     initSphere();
 }
 
@@ -933,7 +959,6 @@ var sphereIndicesBuffer;
 function initSphere() {
     var latitudeBands = 50;
     var longitudeBands = 50;
-    var radius = 5;
 
     var vertexPositionData = [];
 
@@ -948,10 +973,8 @@ function initSphere() {
             var x = cosPhi * sinTheta;
             var y = cosTheta;
             var z = sinPhi * sinTheta;
-            var u = 1 - (longNumber / longitudeBands);
-            var v = 1 - (latNumber / latitudeBands);
 
-            vertexPositionData.push(radius * x, radius * y, radius * z, x, y, z, u, v);
+            vertexPositionData.push(sphereRadius * x, sphereRadius * y, sphereRadius * z, x, y, z);
         }
     }
 
@@ -967,8 +990,8 @@ function initSphere() {
     sphereVertexPositionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, sphereVertexPositionBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexPositionData), gl.STATIC_DRAW);
-    sphereVertexPositionBuffer.itemSize = 8;
-    sphereVertexPositionBuffer.numItems = vertexPositionData.length / 8;
+    sphereVertexPositionBuffer.itemSize = 6;
+    sphereVertexPositionBuffer.numItems = vertexPositionData.length / 6;
 
     sphereIndicesBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sphereIndicesBuffer);
@@ -976,7 +999,6 @@ function initSphere() {
     sphereIndicesBuffer.itemSize = 1;
     sphereIndicesBuffer.numItems = indexData.length;    
 }
-
 
 /**
     Creates array with grass cluster vertices

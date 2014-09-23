@@ -33,6 +33,7 @@ body {
     uniform mat3 uNMatrix;              /**< Normal matrix */
     uniform mat4 uShadowCamMatrix;      /**< Shadow camera position matrix */
 
+    uniform bool uUseShadows;           /**< Apply shadows to the object */
     uniform bool uUseWind;              /**< Move grass objects to simulate the wind */
     uniform float uTime;                /**< Time passed */
     uniform float uBendFactor;          /**< Max bend of grass caused by wind */
@@ -101,6 +102,8 @@ body {
     uniform mat3 uNMatrix;              /**< Normal matrix */
     uniform mat4 uShadowCamMatrix;      /**< Shadow camera position matrix */
 
+    uniform bool uUseShadows;           /**< Apply shadows to the object */
+
     varying vec2 vTextureCoord;
     varying vec3 vTransformedNormal;    /**< Normal vector in space */
     varying vec4 vLightPosition;        /**< Position of point light from current vertex */
@@ -113,25 +116,28 @@ body {
         vLightPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
         gl_Position = uPMatrix * uCamMatrix * vLightPosition;
 
-        /**
-            Count distance from shadow camera to vertex and coordinate to sample shadow map.
-            If vertex is not visible on shadow map set max distance.
-        */
-        vec4 shadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
-        vec4 shadowCoordinateWdivide = shadowPosition / shadowPosition.w;
-        vShadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
-        if (vShadowCoord.x < 0.0 || vShadowCoord.x > 1.0 || vShadowCoord.y < 0.0 || vShadowCoord.y > 1.0) {
-            vShadowDistance = 100.0;
-        } else {
-            vShadowDistance = shadowPosition.z * 0.005;
+        if (uUseShadows) {
+            /**
+                Count distance from shadow camera to vertex and coordinate to sample shadow map.
+                If vertex is not visible on shadow map set max distance.
+            */
+            vec4 shadowPosition = uPMatrix * uShadowCamMatrix * vLightPosition;
+            vec4 shadowCoordinateWdivide = shadowPosition / shadowPosition.w;
+            vShadowCoord = shadowCoordinateWdivide.xy * v2 + v2;
+            if (vShadowCoord.x < 0.0 || vShadowCoord.x > 1.0 || vShadowCoord.y < 0.0 || vShadowCoord.y > 1.0) {
+                vShadowDistance = 100.0;
+            } else {
+                vShadowDistance = shadowPosition.z * 0.005;
+            }            
         }
 
         /**
             Flip the texture in Y axis
         */
         vTextureCoord = 1.0 - aTextureCoord;
-
+        
         vTransformedNormal = uNMatrix * aVertexNormal;
+        vUseShadows = uUseShadows;
     }
 </script>
 
@@ -669,6 +675,9 @@ body {
 <!-- ____________________________________________________________ -->
 
 <script id="vertSphere" type="x-shader/x-vertex">
+/**
+    Vertex shader used to draw mirror
+*/
     attribute vec3 aVertexPosition;
     attribute vec3 aVertexNormal;
 
@@ -677,7 +686,7 @@ body {
     uniform mat4 uPMatrix;                  /**< Perspective matrix */
     uniform mat3 uNMatrix;                  /**< Normal matrix */
 
-    uniform vec3 uCameraPosition;
+    uniform vec3 uCameraPosition;           /**< Eye camera position */
 
     varying vec3 vTextureCoord;
 
@@ -687,30 +696,36 @@ body {
         vec4 position = uMVMatrix * vec4(aVertexPosition, 1.0);
         gl_Position = uPMatrix * uCamMatrix * position;
 
-        /* Calculate incident ray for environment mapping. */
+        /**
+            Calculate incident ray
+        */
         vec3 incidentRay = normalize(position.xyz - uCameraPosition);
+        /**
+            Count normals after translating the sphere
+        */
         vec3 vTransformedNormal = uNMatrix * aVertexNormal;
-
-        /* Calculate reflected ray for environment mapping and pass it to fragment shader. */
+        /**
+            Calculate reflected ray
+        */
         vTextureCoord = reflect(incidentRay, normalize(vTransformedNormal));
     }
 </script>
 
 <script id="fragSphere" type="x-shader/x-fragment">
+/**
+    Fragment shader used to draw mirror
+*/
     precision mediump float;
 
-    uniform samplerCube uSampler;                       /**< Cube texture to apply on the sky */
-    uniform float uRainDensity;                         /**< Intensivity of rain */
+    uniform samplerCube uSampler;                       /**< Cube texture to apply on the sphere */
 
     varying vec3 vTextureCoord;
 
-    const vec3 grey = vec3(0.5, 0.5, 0.5);              /**< Gray color in RGB used when it's raining */
-    const vec3 sphereColor = vec3(0.3, 0.3, 0.3);
+    const vec3 sphereColor = vec3(0.1, 0.1, 0.1);
 
     void main(void) {
         vec4 texture = textureCube(uSampler, vTextureCoord);
-        gl_FragColor = mix(texture, vec4(grey, 1.0), uRainDensity);
-        gl_FragColor = mix(gl_FragColor, vec4(sphereColor, 1.0), 0.5);
+        gl_FragColor = mix(texture, vec4(sphereColor, 1.0), 0.3);
     }
 </script>
 
@@ -1441,6 +1456,40 @@ body {
                 +n+t+ "Number of frames: " + numberOfFrames
                 +n+t+ "Time: " + sec.toFixed(2) + "s"
                 +n+t+ "Average: " + (numberOfFrames / sec).toFixed(2)
+                +n+n+ "Settings:"
+                +n+t+ "Batch grass: "        + batchGrass
+                +n+t+ "Grass density: "      + grassDensity
+                +n+t+ "Batch red flowers: "        + batchFlower[0]
+                +n+t+ "Red flowers density: "      + flowerDensity[0]
+                +n+t+ "Batch blue flowers: "        + batchFlower[1]
+                +n+t+ "Blue flowers density: "      + flowerDensity[1]
+                +n+t+ "Number of trees: "      + numberOfTrees
+				+n+t+ "Wind: "                 + wind
+                +n+t+ "Rain: "                 + rain
+                +n+t+t+ "Rain density: "     + rainDensity
+                +n+t+ "Render skybox: "      + skybox
+                +n+t+ "Use radial blur: "    + radialBlur
+                +n+t+ "Use depth of field: " + depthOfField
+                +n+t+t+ "Depth of field settings:"
+                +n+t+t+t+ "Near: "   + dofSettings[0]
+                +n+t+t+t+ "Middle: " + dofSettings[1]
+                +n+t+t+t+ "Far: "    + dofSettings[2]
+                +n+t+ "Use shadows: " + shadows
+                +n+t+t+ "Use soft shadows: " + softShadows
+                +n+t+ "Use lighting: " + lighting
+                +n+t+t+ "Light settings:"
+                +n+t+t+t+ "Point light position:"
+                +n+t+t+t+t+ "X: " + lightLocation[0]
+                +n+t+t+t+t+ "Y: " + lightLocation[1]
+                +n+t+t+t+t+ "Z: " + lightLocation[2]
+                +n+t+t+t+ "Point light color:"
+                +n+t+t+t+t+ "R: " + pointLightColor[0]
+                +n+t+t+t+t+ "G: " + pointLightColor[1]
+                +n+t+t+t+t+ "B: " + pointLightColor[2]
+                +n+t+t+t+ "Ambient light color:"
+                +n+t+t+t+t+ "R: " + ambientColor[0]
+                +n+t+t+t+t+ "G: " + ambientColor[1]
+                +n+t+t+t+t+ "B: " + ambientColor[2]
         );
     }
 
@@ -1493,7 +1542,7 @@ body {
         /**
             Initialize GL context and it's components
         */
-        gl = initGL(canvas);
+        initGL(canvas);
         initFramebuffers();
         initShaders();
         initBuffers();

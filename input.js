@@ -275,6 +275,8 @@ function moveRainSlider(s) {
     gl.uniform1f(shaderTreeProgram.rainDensityUniform, grayed);
     gl.useProgram(shaderSkyboxProgram);
     gl.uniform1f(shaderSkyboxProgram.rainDensityUniform, grayed);
+    gl.useProgram(shaderSkyboxProgram);
+    gl.uniform1f(shaderSkyboxProgram.rainDensityUniform, grayed);
     gl.useProgram(shaderSphereProgram);
     gl.uniform1f(shaderSphereProgram.rainDensityUniform, grayed);
 }
