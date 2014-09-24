@@ -123,6 +123,11 @@ function setInputValues() {
     flowerBlueDensitySlider.value = flowerBlueDensitySlider.max - flowerDensity[1] + 1.0;
 
     document.getElementById("numberOfTrees").value = numberOfTrees;
+
+    document.getElementById("sphere").checked = sphere;
+    document.getElementById("sphereX").value = spherePosition[0];
+    document.getElementById("sphereY").value = spherePosition[1];
+    document.getElementById("sphereZ").value = spherePosition[2];
 	
 	document.getElementById("wind").checked = wind;
 	
@@ -227,6 +232,34 @@ function numTrees(s) {
     }
     numberOfTrees = number;
     s.value = number;
+}
+
+
+/**
+    Called on change of sphere checkbox
+*/
+function cbSphere(s) {
+    sphere = !sphere;
+    s.checked = sphere;
+}
+
+/**
+    Called on change of sphere position X textbox value
+*/
+function tbSphereX(s) {
+    spherePosition[0] = parseFloat(s.value);
+}
+/**
+    Called on change of sphere position Y textbox value
+*/
+function tbSphereY(s) {
+    spherePosition[1] = parseFloat(s.value);
+}
+/**
+    Called on change of sphere position Z textbox value
+*/
+function tbSphereZ(s) {
+    spherePosition[2] = parseFloat(s.value);
 }
 
 /**

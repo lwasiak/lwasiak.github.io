@@ -689,7 +689,7 @@ body {
 
 <script id="vertSphere" type="x-shader/x-vertex">
 /**
-    Vertex shader used to draw mirror
+    Vertex shader used to draw reflective sphere
 */
     attribute vec3 aVertexPosition;
     attribute vec3 aVertexNormal;
@@ -728,7 +728,7 @@ body {
 
 <script id="fragSphere" type="x-shader/x-fragment">
 /**
-    Fragment shader used to draw mirror
+    Fragment shader used to draw reflective sphere
 */
     precision mediump float;
 
@@ -1611,6 +1611,16 @@ body {
 
     <br />
     Number of trees: <input type="number" id="numberOfTrees" min=0 max=6 value=6 onchange="numTrees(this)" /><br />
+
+    <br />
+    <input type="checkbox" id="sphere" onchange="cbSphere(this)" checked /> Sphere<br />
+    <table style="border: 0; padding: 10px;">
+        <tr>
+            <td>X: <input type="text" id="sphereX" value="64.0" onchange="tbSphereX(this)" />
+            <td>Y: <input type="text" id="sphereY" value="40.0" onchange="tbSphereY(this)" />
+            <td>Z: <input type="text" id="sphereZ" value="-64.0" onchange="tbSphereZ(this)" />
+        </tr>
+    </table>
 
     <br />
     <input type="checkbox" id="wind" onchange="cbWind(this)" checked /> Wind<br />

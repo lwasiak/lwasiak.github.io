@@ -8,11 +8,11 @@ var camZPos = -15.0;
 var camHeight = 1.0;
 var moveMode = 4;
 
-var shadowRotateVertical = 37.0;
-var shadowRotateHorizontal = 35.0;
+var shadowRotateVertical = 35.0;
+var shadowRotateHorizontal = 30.0;
 var shadowXPos = 10.0;
-var shadowYPos = 55.0;
-var shadowZPos = 40.0;
+var shadowYPos = 65.0;
+var shadowZPos = 50.0;
 
 var terrainHeight = 20.0;
 
@@ -42,9 +42,11 @@ var radialBlur = false;
 
 var motionBlur = false;
 
-var mirrorTextureSize = 512;
-var mirrorPosition = [64.0, 40.0, -64.0]
-var sphereRadius = 10.0;
+var sphere = true;
+var sphereQuality = 30;
+var sphereTextureSize = 512;
+var spherePosition = [64.0, 30.0, -64.0]
+var sphereRadius = 5.0;
 
 var depthOfField = false;
 var DOFQuality = 0.5;
@@ -101,11 +103,13 @@ function setDepthOfFieldUniforms() {
     );
 }
 
-var mvSceneMatrix = mat4.create();      /**< Model view matrix */
-var pSceneMatrix = mat4.create();       /**< Perspective matrix */
-var camSceneMatrix = mat4.create();     /**< Eye camera matrix */
-var camShadowMatrix = mat4.create();    /**< Shadow samera camera matrix */
-var mvpMatrix = mat4.create();          /**< Model view perspective matrix */
+var mvSceneMatrix = mat4.create();          /**< Model view matrix */
+var pSceneMatrix = mat4.create();           /**< Perspective matrix for normal scene drawing */
+var pEnvMapMatrix = mat4.create();          /**< Perspective matrix for environment map drawing */
+var camSceneMatrix = mat4.create();         /**< Eye camera matrix */
+var camEnvMapMatrix = mat4.create();        /**< Environment map camera matrix */
+var camShadowMatrix = mat4.create();        /**< Shadow camera matrix */
+var mvpMatrix = mat4.create();              /**< Model view perspective matrix */
 
 /**
     Draws scene to store Z values in texture
@@ -232,11 +236,29 @@ function drawShadows() {
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, treeIndicesBuffer[i]);
         gl.drawElements(gl.TRIANGLES, treeIndicesBuffer[i].numItems, gl.UNSIGNED_SHORT, 0);        
     }
-
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, null);
-    gl.disableVertexAttribArray(shaderShadowProgram.vertexPositionAttribute);
     gl.disableVertexAttribArray(shaderShadowProgram.textureCoordAttribute);
+
+    //Sphere
+    gl.uniform1i(shaderShadowProgram.moveElementUniform, false);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, sphereVertexPositionBuffer);
+    gl.vertexAttribPointer(shaderShadowProgram.vertexPositionAttribute, 3, gl.FLOAT, gl.FALSE, 6 * 4, 0);
+
+    mat4.identity(mvSceneMatrix);
+    mat4.translate(mvSceneMatrix, mvSceneMatrix, spherePosition);
+
+    mat4.mul(mvpMatrix, camShadowMatrix, mvSceneMatrix);
+    mat4.mul(mvpMatrix, pSceneMatrix, mvpMatrix);
+    gl.uniformMatrix4fv(shaderShadowProgram.mvpMatrixUniform, false, mvpMatrix);
+
+    gl.uniform1f(shaderShadowProgram.bendFactorUniform, 0.0);
+    
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sphereIndicesBuffer);
+    gl.drawElements(gl.TRIANGLES, sphereIndicesBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+
+    gl.disableVertexAttribArray(shaderShadowProgram.vertexPositionAttribute);
 }
 
 /**
@@ -366,176 +388,81 @@ function drawDOF() {
 
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, null);
-    gl.disableVertexAttribArray(shaderDofProgram.vertexPositionAttribute);
     gl.disableVertexAttribArray(shaderDofProgram.textureCoordAttribute);
+
+    //Sphere
+    gl.uniform1i(shaderDofProgram.moveElementUniform, false);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, sphereVertexPositionBuffer);
+    gl.vertexAttribPointer(shaderDofProgram.vertexPositionAttribute, 3, gl.FLOAT, gl.FALSE, 6 * 4, 0);
+
+    mat4.identity(mvSceneMatrix);
+    mat4.translate(mvSceneMatrix, mvSceneMatrix, spherePosition);
+
+    mat4.mul(mvpMatrix, camSceneMatrix, mvSceneMatrix);
+    mat4.mul(mvpMatrix, pSceneMatrix, mvpMatrix);
+    gl.uniformMatrix4fv(shaderDofProgram.mvpMatrixUniform, false, mvpMatrix);
+
+    gl.uniform1f(shaderDofProgram.bendFactorUniform, 0.0);
+    
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sphereIndicesBuffer);
+    gl.drawElements(gl.TRIANGLES, sphereIndicesBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+
+    gl.disableVertexAttribArray(shaderDofProgram.vertexPositionAttribute);
 }
 
 /**
     Draws scene in color
 */
 function drawScene() {
-    drawCubeMap();
-
-    countSceneCameraMatrix();
     gl.bindFramebuffer(gl.FRAMEBUFFER, sceneFramebuffer);
     gl.viewport(0, 0, screenWidth, screenHeight);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    //mat4.perspective(pSceneMatrix, degToRad(90.0), 1024.0 / 1024.0, 0.1, 200.0);
-    gl.useProgram(shaderGrassProgram);
-    gl.uniformMatrix4fv(shaderGrassProgram.pMatrixUniform, false, pSceneMatrix);
-    gl.useProgram(shaderGroundProgram);
-    gl.uniformMatrix4fv(shaderGroundProgram.pMatrixUniform, false, pSceneMatrix);
-    gl.useProgram(shaderTreeProgram);
-    gl.uniformMatrix4fv(shaderTreeProgram.pMatrixUniform, false, pSceneMatrix);
-    gl.useProgram(shaderSkyboxProgram);
-    gl.uniformMatrix4fv(shaderSkyboxProgram.pMatrixUniform, false, pSceneMatrix);
-/*
-    mat4.identity(camSceneMatrix);
-    mat4.rotateX(camSceneMatrix, camSceneMatrix, degToRad(0));
-    mat4.rotateY(camSceneMatrix, camSceneMatrix, degToRad(270));
-    mat4.translate(camSceneMatrix, camSceneMatrix, [-64.0, -40.0, 64.0]);
-*/
-    drawGround();
-    drawGrass();
-    drawTree();
-    drawSphere();
+    drawGround('c');
+    drawGrass('c');
+    drawTree('c');
+    if (sphere) {
+        drawEnvMap();
+        /**
+            Restore previous FBO and viewport after changing it when drawing environment map
+            Don't clear color and depth buffer bit
+        */
+        gl.bindFramebuffer(gl.FRAMEBUFFER, sceneFramebuffer);
+        gl.viewport(0, 0, screenWidth, screenHeight);
 
-    if (skybox) {
-        drawSkybox();
+        drawSphere('c');
     }
-
-    if (rain) {
-        drawRain();
-    }
-}
-
-function drawCubeMap() {
-    gl.bindFramebuffer(gl.FRAMEBUFFER, cubeFramebuffer);
-    gl.viewport(0, 0, mirrorTextureSize, mirrorTextureSize);
-
-    var cubeMapPerspective = mat4.create();
-    mat4.perspective(cubeMapPerspective, degToRad(90.0), 1.0, 0.1, 200.0);
-    
-    gl.useProgram(shaderGrassProgram);
-    gl.uniformMatrix4fv(shaderGrassProgram.pMatrixUniform, false, cubeMapPerspective);
-    gl.useProgram(shaderGroundProgram);
-    gl.uniformMatrix4fv(shaderGroundProgram.pMatrixUniform, false, cubeMapPerspective);
-    gl.useProgram(shaderTreeProgram);
-    gl.uniformMatrix4fv(shaderTreeProgram.pMatrixUniform, false, cubeMapPerspective);
-    gl.useProgram(shaderSkyboxProgram);
-    gl.uniformMatrix4fv(shaderSkyboxProgram.pMatrixUniform, false, cubeMapPerspective);
-
-    mat4.identity(camSceneMatrix);
-    mat4.rotateX(camSceneMatrix, camSceneMatrix, degToRad(180));
-    mat4.rotateY(camSceneMatrix, camSceneMatrix, degToRad(270));
-    mat4.translate(camSceneMatrix, camSceneMatrix, [-mirrorPosition[0], -mirrorPosition[1], -mirrorPosition[2]]);
-
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X, cubeTexture, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    drawGround();
-    drawGrass();
-    drawTree();
     if (skybox) {
-        drawSkybox();
+        drawSkybox('c');
     }
     if (rain) {
-        drawRain();
-    }
-
-    mat4.identity(camSceneMatrix);
-    mat4.rotateX(camSceneMatrix, camSceneMatrix, degToRad(180));
-    mat4.rotateY(camSceneMatrix, camSceneMatrix, degToRad(90));
-    mat4.translate(camSceneMatrix, camSceneMatrix, [-mirrorPosition[0], -mirrorPosition[1], -mirrorPosition[2]]);
-
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_NEGATIVE_X, cubeTexture, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    drawGround();
-    drawGrass();
-    drawTree();
-    if (skybox) {
-        drawSkybox();
-    }
-    if (rain) {
-        drawRain();
-    }
-
-    mat4.identity(camSceneMatrix);
-    mat4.rotateX(camSceneMatrix, camSceneMatrix, degToRad(-90));
-    mat4.rotateY(camSceneMatrix, camSceneMatrix, degToRad(0));
-    mat4.translate(camSceneMatrix, camSceneMatrix, [-mirrorPosition[0], -mirrorPosition[1], -mirrorPosition[2]]);
-
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_Y, cubeTexture, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    drawGround();
-    drawGrass();
-    drawTree();
-    if (skybox) {
-        drawSkybox();
-    }
-    if (rain) {
-        drawRain();
-    }
-
-    mat4.identity(camSceneMatrix);
-    mat4.rotateX(camSceneMatrix, camSceneMatrix, degToRad(90));
-    mat4.rotateY(camSceneMatrix, camSceneMatrix, degToRad(0));
-    mat4.translate(camSceneMatrix, camSceneMatrix, [-mirrorPosition[0], -mirrorPosition[1], -mirrorPosition[2]]);
-
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, cubeTexture, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    drawGround();
-    drawGrass();
-    drawTree();
-    if (skybox) {
-        drawSkybox();
-    }
-    if (rain) {
-        drawRain();
-    }
-
-    mat4.identity(camSceneMatrix);
-    mat4.rotateX(camSceneMatrix, camSceneMatrix, degToRad(180));
-    mat4.rotateY(camSceneMatrix, camSceneMatrix, degToRad(0));
-    mat4.translate(camSceneMatrix, camSceneMatrix, [-mirrorPosition[0], -mirrorPosition[1], -mirrorPosition[2]]);
-
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_Z, cubeTexture, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    drawGround();
-    drawGrass();
-    drawTree();
-    if (skybox) {
-        drawSkybox();
-    }
-    if (rain) {
-        drawRain();
-    }
-
-    mat4.identity(camSceneMatrix);
-    mat4.rotateX(camSceneMatrix, camSceneMatrix, degToRad(180));
-    mat4.rotateY(camSceneMatrix, camSceneMatrix, degToRad(180));
-    mat4.translate(camSceneMatrix, camSceneMatrix, [-mirrorPosition[0], -mirrorPosition[1], -mirrorPosition[2]]);
-
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, cubeTexture, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    drawGround();
-    drawGrass();
-    drawTree();
-    if (skybox) {
-        drawSkybox();
-    }
-    if (rain) {
-        drawRain();
+        drawRain('c');
     }
 }
 
 /**
     Draws ground in color
+
+    @param drawType     'c' - normal color scene, 'e' - environment mapping
 */
-function drawGround() {
+function drawGround(drawType) {
     gl.useProgram(shaderGroundProgram);
 
-    gl.uniformMatrix4fv(shaderGroundProgram.camMatrixUniform, false, camSceneMatrix);
+    switch (drawType) {
+        case 'c':
+            gl.uniformMatrix4fv(shaderGroundProgram.pMatrixUniform, false, pSceneMatrix);
+            gl.uniformMatrix4fv(shaderGroundProgram.camMatrixUniform, false, camSceneMatrix);
+            gl.uniform1i(shaderGroundProgram.useShadowsUniform, shadows);
+            break;
+        case 'e':
+            gl.uniformMatrix4fv(shaderGroundProgram.pMatrixUniform, false, pEnvMapMatrix);
+            gl.uniformMatrix4fv(shaderGroundProgram.camMatrixUniform, false, camEnvMapMatrix);
+            gl.uniform1i(shaderGroundProgram.useShadowsUniform, false);
+            break;
+        default:
+            return;
+    }
 
     gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_2D, shadowTexture);
@@ -582,11 +509,26 @@ function drawGround() {
 
 /**
     Draws grass and flowers in color
+
+    @param drawType     'c' - normal color scene, 'e' - environment mapping
 */
-function drawGrass() {
+function drawGrass(drawType) {
     gl.useProgram(shaderGrassProgram);
 
-    gl.uniformMatrix4fv(shaderGrassProgram.camMatrixUniform, false, camSceneMatrix);
+    switch (drawType) {
+        case 'c':
+            gl.uniformMatrix4fv(shaderGrassProgram.pMatrixUniform, false, pSceneMatrix);
+            gl.uniformMatrix4fv(shaderGrassProgram.camMatrixUniform, false, camSceneMatrix);
+            gl.uniform1i(shaderGrassProgram.useShadowsUniform, shadows);
+            break;
+        case 'e':
+            gl.uniformMatrix4fv(shaderGrassProgram.pMatrixUniform, false, pEnvMapMatrix);
+            gl.uniformMatrix4fv(shaderGrassProgram.camMatrixUniform, false, camEnvMapMatrix);
+            gl.uniform1i(shaderGrassProgram.useShadowsUniform, false);
+            break;
+        default:
+            return;
+    }
 
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, shadowTexture);
@@ -761,11 +703,26 @@ function drawGrass() {
 
 /**
     Draws trees in color
+    
+    @param drawType     'c' - normal color scene, 'e' - environment mapping
 */
-function drawTree() {
+function drawTree(drawType) {
     gl.useProgram(shaderTreeProgram);
 
-    gl.uniformMatrix4fv(shaderTreeProgram.camMatrixUniform, false, camSceneMatrix);
+    switch (drawType) {
+        case 'c':
+            gl.uniformMatrix4fv(shaderTreeProgram.pMatrixUniform, false, pSceneMatrix);
+            gl.uniformMatrix4fv(shaderTreeProgram.camMatrixUniform, false, camSceneMatrix);
+            gl.uniform1i(shaderTreeProgram.useShadowsUniform, shadows);
+            break;
+        case 'e':
+            gl.uniformMatrix4fv(shaderTreeProgram.pMatrixUniform, false, pEnvMapMatrix);
+            gl.uniformMatrix4fv(shaderTreeProgram.camMatrixUniform, false, camEnvMapMatrix);
+            gl.uniform1i(shaderTreeProgram.useShadowsUniform, false);
+            break;
+        default:
+            return;
+    }
 
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, shadowTexture);
@@ -837,11 +794,24 @@ function drawTree() {
 
 /**
     Draws skybox in color
+
+    @param drawType     'c' - normal color scene, 'e' - environment mapping
 */
-function drawSkybox() {
+function drawSkybox(drawType) {
     gl.useProgram(shaderSkyboxProgram);
 
-    gl.uniformMatrix4fv(shaderSkyboxProgram.camMatrixUniform, false, camSceneMatrix);
+    switch (drawType) {
+        case 'c':
+            gl.uniformMatrix4fv(shaderSkyboxProgram.pMatrixUniform, false, pSceneMatrix);
+            gl.uniformMatrix4fv(shaderSkyboxProgram.camMatrixUniform, false, camSceneMatrix);
+            break;
+        case 'e':
+            gl.uniformMatrix4fv(shaderSkyboxProgram.pMatrixUniform, false, pEnvMapMatrix);
+            gl.uniformMatrix4fv(shaderSkyboxProgram.camMatrixUniform, false, camEnvMapMatrix);
+            break;
+        default:
+            return;
+    }
 
     gl.enableVertexAttribArray(shaderSkyboxProgram.vertexPositionAttribute);
     /**
@@ -870,14 +840,27 @@ function drawSkybox() {
 
 /**
     Draws rain in color
+
+    @param drawType     'c' - normal color scene, 'e' - environment mapping
 */
-function drawRain() {
+function drawRain(drawType) {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
     gl.useProgram(shaderRainProgram);
 
-    gl.uniformMatrix4fv(shaderRainProgram.camMatrixUniform, false, camSceneMatrix);
+    switch (drawType) {
+        case 'c':
+            gl.uniformMatrix4fv(shaderRainProgram.pMatrixUniform, false, pSceneMatrix);
+            gl.uniformMatrix4fv(shaderRainProgram.camMatrixUniform, false, camSceneMatrix);
+            break;
+        case 'e':
+            gl.uniformMatrix4fv(shaderRainProgram.pMatrixUniform, false, pEnvMapMatrix);
+            gl.uniformMatrix4fv(shaderRainProgram.camMatrixUniform, false, camEnvMapMatrix);
+            break;
+        default:
+            return;
+    }
 
     gl.enableVertexAttribArray(shaderRainProgram.vertexPositionAttribute);
     gl.enableVertexAttribArray(shaderRainProgram.alphaAttribute);
@@ -907,10 +890,59 @@ function drawRain() {
     gl.disable(gl.BLEND);
 }
 
-function drawSphere() {
+
+/**
+    Draws cube environment map for reflective sphere
+*/
+var envMapCameraSettings = [[ 180,  270],
+                            [ 180,   90],
+                            [ -90,    0],
+                            [  90,    0],
+                            [ 180,    0],
+                            [ 180,  180]];
+
+function drawEnvMap() {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, environmentFramebuffer);
+    gl.viewport(0, 0, sphereTextureSize, sphereTextureSize);
+
+    for (var i = 0; i < 6; i++) {
+        mat4.identity(camEnvMapMatrix);
+        mat4.rotateX(camEnvMapMatrix, camEnvMapMatrix, degToRad(envMapCameraSettings[i][0]));
+        mat4.rotateY(camEnvMapMatrix, camEnvMapMatrix, degToRad(envMapCameraSettings[i][1]));
+        mat4.translate(camEnvMapMatrix, camEnvMapMatrix, [-spherePosition[0], -spherePosition[1], -spherePosition[2]]);
+
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, environmentTexture, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        drawGround('e');
+        drawGrass('e');
+        drawTree('e');
+        if (skybox) {
+            drawSkybox('e');
+        }
+        if (rain) {
+            drawRain('e');
+        }
+    }
+}
+
+/**
+    Draws sphere in color
+
+    @param drawType     'c' - normal color scene
+*/
+function drawSphere(drawType) {
     gl.useProgram(shaderSphereProgram);
 
-    gl.uniformMatrix4fv(shaderSphereProgram.camMatrixUniform, false, camSceneMatrix);
+    switch (drawType) {
+        case 'c':
+            gl.uniformMatrix4fv(shaderSphereProgram.pMatrixUniform, false, pSceneMatrix);
+            gl.uniformMatrix4fv(shaderSphereProgram.camMatrixUniform, false, camSceneMatrix);
+            break;
+        default:
+            return;
+    }
+
     gl.uniform3f(shaderSphereProgram.cameraPositionUniform, camXPos, camYPos, camZPos);
     
     gl.enableVertexAttribArray(shaderSphereProgram.vertexPositionAttribute);
@@ -921,11 +953,11 @@ function drawSphere() {
     gl.vertexAttribPointer(shaderSphereProgram.vertexNormalAttribute, 3, gl.FLOAT, gl.FALSE, 6 * 4, 3 * 4);
 
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, environmentTexture);
     gl.uniform1i(shaderSphereProgram.samplerUniform, 0);
 
     mat4.identity(mvSceneMatrix);
-    mat4.translate(mvSceneMatrix, mvSceneMatrix, mirrorPosition);
+    mat4.translate(mvSceneMatrix, mvSceneMatrix, spherePosition);
 
     var normalMatrix = mat3.create();
     mat3.normalFromMat4(normalMatrix, mvSceneMatrix);
@@ -941,33 +973,6 @@ function drawSphere() {
 
     gl.disableVertexAttribArray(shaderSphereProgram.vertexPositionAttribute);
     gl.disableVertexAttribArray(shaderSphereProgram.vertexNormalAttribute);
-//
-/*
-    gl.useProgram(shaderSkyboxProgram);
-
-    gl.uniformMatrix4fv(shaderSkyboxProgram.camMatrixUniform, false, camSceneMatrix);
-
-    gl.enableVertexAttribArray(shaderSkyboxProgram.vertexPositionAttribute);
-    mat4.identity(mvSceneMatrix);
-    mat4.translate(mvSceneMatrix, mvSceneMatrix, mirrorPosition);
-    mat4.scale(mvSceneMatrix, mvSceneMatrix, [0.05, 0.05, 0.05]);
-
-    gl.uniformMatrix4fv(shaderSkyboxProgram.mvMatrixUniform, false, mvSceneMatrix);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, skyboxVertexPositionBuffer);
-    gl.vertexAttribPointer(shaderSkyboxProgram.vertexPositionAttribute, skyboxVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
-    gl.uniform1i(shaderSkyboxProgram.samplerUniform, 0);
-
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, skyboxIndicesBuffer);
-    gl.drawElements(gl.TRIANGLES, skyboxIndicesBuffer.numItems, gl.UNSIGNED_SHORT, 0);
-
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
-    gl.disableVertexAttribArray(shaderSkyboxProgram.vertexPositionAttribute);
-*/
 }
 
 var currentCopyTexture = 0;

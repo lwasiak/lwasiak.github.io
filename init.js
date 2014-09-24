@@ -61,6 +61,7 @@ var shaderGroundProgram;
 var shaderTreeProgram;
 var shaderSkyboxProgram;
 var shaderRainProgram;
+var shaderSphereProgram;
 var shaderShadowProgram;
 var shaderDofProgram;
 var shaderHorizontalBlurDOFProgram;
@@ -69,15 +70,14 @@ var shaderMotionBlurProgram;
 var shaderRadialBlurProgram;
 var shaderScreenProgram;
 
-var shaderSphereProgram;
-
 var vertexTextureUnits;
 
 function initShaders() {
     /**
-        Count perspective matrix
+        Count perspective matrices
     */
     mat4.perspective(pSceneMatrix, degToRad(45.0), screenWidth / screenHeight, 0.1, 200.0);
+    mat4.perspective(pEnvMapMatrix, degToRad(90.0), 1.0, 0.1, 200.0);
 
     /**
         Count shadow camera matrix
@@ -150,9 +150,7 @@ function initShaders() {
     /**
         Sets uniforms which won't change during render loop
     */
-    gl.uniformMatrix4fv(shaderGrassProgram.pMatrixUniform, false, pSceneMatrix);
     gl.uniformMatrix4fv(shaderGrassProgram.shadowCamMatrixUniform, false, camShadowMatrix);
-    gl.uniform1i(shaderGrassProgram.useShadowsUniform, shadows);
     gl.uniform1i(shaderGrassProgram.useSoftShadowsUniform, softShadows);
     gl.uniform2f(shaderGrassProgram.shadowMapResolutionUniform, 1.0 / (screenWidth * shadowMapQuality), 1.0 / (screenHeight * shadowMapQuality));
     setLightingUniforms(shaderGrassProgram);
@@ -198,9 +196,7 @@ function initShaders() {
     shaderGroundProgram.pointLightColorUniform = gl.getUniformLocation(shaderGroundProgram, "uPointLightColor");
     shaderGroundProgram.rainDensityUniform = gl.getUniformLocation(shaderGroundProgram, "uRainDensity");
 
-    gl.uniformMatrix4fv(shaderGroundProgram.pMatrixUniform, false, pSceneMatrix);
     gl.uniformMatrix4fv(shaderGroundProgram.shadowCamMatrixUniform, false, camShadowMatrix);
-    gl.uniform1i(shaderGroundProgram.useShadowsUniform, shadows);
     gl.uniform1i(shaderGroundProgram.useSoftShadowsUniform, softShadows);
     gl.uniform2f(shaderGroundProgram.shadowMapResolutionUniform, 1.0 / (screenWidth * shadowMapQuality), 1.0 / (screenHeight * shadowMapQuality));
     setLightingUniforms(shaderGroundProgram);
@@ -257,9 +253,7 @@ function initShaders() {
         shaderTreeProgram.bendFactorUniform = gl.getUniformLocation(shaderTreeProgram, "uBendFactor");
     }
 
-    gl.uniformMatrix4fv(shaderTreeProgram.pMatrixUniform, false, pSceneMatrix);
     gl.uniformMatrix4fv(shaderTreeProgram.shadowCamMatrixUniform, false, camShadowMatrix);
-    gl.uniform1i(shaderTreeProgram.useShadowsUniform, shadows);
     gl.uniform1i(shaderTreeProgram.useSoftShadowsUniform, softShadows);
     gl.uniform2f(shaderTreeProgram.shadowMapResolutionUniform, 1.0 / (screenWidth * shadowMapQuality), 1.0 / (screenHeight * shadowMapQuality));
     setLightingUniforms(shaderTreeProgram);
@@ -293,7 +287,6 @@ function initShaders() {
     shaderSkyboxProgram.samplerUniform = gl.getUniformLocation(shaderSkyboxProgram, "uSampler");
     shaderSkyboxProgram.rainDensityUniform = gl.getUniformLocation(shaderSkyboxProgram, "uRainDensity");
 
-    gl.uniformMatrix4fv(shaderSkyboxProgram.pMatrixUniform, false, pSceneMatrix);
     gl.uniform1f(shaderSkyboxProgram.rainDensityUniform, grayed);
 
     gl.deleteShader(vertexShader);
@@ -323,7 +316,6 @@ function initShaders() {
     shaderRainProgram.camMatrixUniform = gl.getUniformLocation(shaderRainProgram, "uCamMatrix");
 
     gl.lineWidth(rainDropsWidth);
-    gl.uniformMatrix4fv(shaderRainProgram.pMatrixUniform, false, pSceneMatrix);
 
     gl.deleteShader(vertexShader);
     gl.deleteShader(fragmentShader);
@@ -353,8 +345,6 @@ function initShaders() {
     shaderSphereProgram.nMatrixUniform = gl.getUniformLocation(shaderSphereProgram, "uNMatrix");
     shaderSphereProgram.cameraPositionUniform = gl.getUniformLocation(shaderSphereProgram, "uCameraPosition");
     shaderSphereProgram.samplerUniform = gl.getUniformLocation(shaderSphereProgram, "uSampler");
-
-    gl.uniformMatrix4fv(shaderSphereProgram.pMatrixUniform, false, pSceneMatrix);
 
     gl.deleteShader(vertexShader);
     gl.deleteShader(fragmentShader);
@@ -568,6 +558,9 @@ var motionBlurTexture;
 var radialBlurFramebuffer;
 var radialBlurTexture;
 
+var environmentFramebuffer;
+var environmentTexture;
+
 /**
     Checks if FBO is correctly created
 
@@ -601,19 +594,33 @@ function checkFramebuffer(id) {
 
     @param fbo              FBO variable 
     @param texture          Texture variable
+    @param textureTarget    TEXTURE_2D or TEXTURE_CUBE_MAP
     @param useDepthbuffer   True if framebuffer is drawing with DEPTH_TEST enabled
 */
-function attachTextureToFBO(fbo, texture, textureWidth, textureHeight, useDepthbuffer) {
+function attachTextureToFBO(fbo, texture, textureTarget, textureWidth, textureHeight, useDepthbuffer) {
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureWidth, textureHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.bindTexture(textureTarget, texture);
+    gl.texParameteri(textureTarget, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(textureTarget, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(textureTarget, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(textureTarget, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+    switch(textureTarget)
+    {
+        case gl.TEXTURE_2D:
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureWidth, textureHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+            break;
+        case gl.TEXTURE_CUBE_MAP:
+            for (var i = 0; i < 6; i++) {
+                gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, gl.RGBA, textureWidth, textureHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            }
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X, texture, 0);
+            break;
+        default:
+            return;
+    }
 
     if (useDepthbuffer) {
         var renderbuffer = gl.createRenderbuffer();
@@ -626,13 +633,10 @@ function attachTextureToFBO(fbo, texture, textureWidth, textureHeight, useDepthb
     checkFramebuffer(fbo);
 
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.bindTexture(textureTarget, null);
     gl.bindRenderbuffer(gl.RENDERBUFFER, null);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
-
-var cubeFramebuffer;
-var cubeTexture;
 
 /**
     Initializes FBOs with proper texture and size
@@ -640,67 +644,35 @@ var cubeTexture;
 function initFramebuffers() {
     sceneFramebuffer = gl.createFramebuffer();
     sceneTexture = gl.createTexture();
-    attachTextureToFBO(sceneFramebuffer, sceneTexture, screenWidth, screenHeight, true);
+    attachTextureToFBO(sceneFramebuffer, sceneTexture, gl.TEXTURE_2D, screenWidth, screenHeight, true);
 
     shadowFramebuffer = gl.createFramebuffer();
     shadowTexture = gl.createTexture();
-    attachTextureToFBO(shadowFramebuffer, shadowTexture, screenWidth * shadowMapQuality, screenHeight * shadowMapQuality, true);
+    attachTextureToFBO(shadowFramebuffer, shadowTexture, gl.TEXTURE_2D, screenWidth * shadowMapQuality, screenHeight * shadowMapQuality, true);
 
     dofFramebuffer = gl.createFramebuffer();
     dofTexture = gl.createTexture();
-    attachTextureToFBO(dofFramebuffer, dofTexture, screenWidth * DOFQuality, screenHeight * DOFQuality, true);
+    attachTextureToFBO(dofFramebuffer, dofTexture, gl.TEXTURE_2D, screenWidth * DOFQuality, screenHeight * DOFQuality, true);
 
     blurHorizontalSceneFramebuffer = gl.createFramebuffer();
     blurHorizontalSceneTexture = gl.createTexture();
-    attachTextureToFBO(blurHorizontalSceneFramebuffer, blurHorizontalSceneTexture, screenWidth, screenHeight, false);
+    attachTextureToFBO(blurHorizontalSceneFramebuffer, blurHorizontalSceneTexture, gl.TEXTURE_2D, screenWidth, screenHeight, false);
 
     blurVerticalSceneFramebuffer = gl.createFramebuffer();
     blurVerticalSceneTexture = gl.createTexture();
-    attachTextureToFBO(blurVerticalSceneFramebuffer, blurVerticalSceneTexture, screenWidth, screenHeight, false);
+    attachTextureToFBO(blurVerticalSceneFramebuffer, blurVerticalSceneTexture, gl.TEXTURE_2D, screenWidth, screenHeight, false);
 
     motionBlurFramebuffer = gl.createFramebuffer();
     motionBlurTexture = gl.createTexture();
-    attachTextureToFBO(motionBlurFramebuffer, motionBlurTexture, screenWidth, screenHeight, false);
+    attachTextureToFBO(motionBlurFramebuffer, motionBlurTexture, gl.TEXTURE_2D, screenWidth, screenHeight, false);
 
     radialBlurFramebuffer = gl.createFramebuffer();
     radialBlurTexture = gl.createTexture();
-    attachTextureToFBO(radialBlurFramebuffer, radialBlurTexture, screenWidth, screenHeight, false);
+    attachTextureToFBO(radialBlurFramebuffer, radialBlurTexture, gl.TEXTURE_2D, screenWidth, screenHeight, false);
 
-    var cubeFaces = [gl.TEXTURE_CUBE_MAP_POSITIVE_X,
-                     gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
-                     gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
-                     gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
-                     gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
-                     gl.TEXTURE_CUBE_MAP_NEGATIVE_Z];
-
-    cubeFramebuffer = gl.createFramebuffer();
-    cubeTexture = gl.createTexture();
-
-    gl.bindFramebuffer(gl.FRAMEBUFFER, cubeFramebuffer);
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
-    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    for (var i = 0; i < 6; i++) {
-        gl.texImage2D(cubeFaces[i], 0, gl.RGBA, mirrorTextureSize, mirrorTextureSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-    }
-
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X, cubeTexture, 0);
-
-    var renderbuffer = gl.createRenderbuffer();
-    gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
-    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, mirrorTextureSize, mirrorTextureSize);
-
-    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, renderbuffer);
-
-    checkFramebuffer(cubeFramebuffer);
-
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
-    gl.bindRenderbuffer(gl.RENDERBUFFER, null);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    environmentFramebuffer = gl.createFramebuffer();
+    environmentTexture = gl.createTexture();
+    attachTextureToFBO(environmentFramebuffer, environmentTexture, gl.TEXTURE_CUBE_MAP, sphereTextureSize, sphereTextureSize, true);
 }
 
 /**
@@ -723,8 +695,8 @@ function handleLoadedTexture(texture, texParam) {
 /**
     Loads 6 textures and merge them into cubemap
 
-    @param texture       Texture dir
-    @param faces         Cube map face
+    @param texture       Texture object
+    @param faces         Textures dirs
 */
 function loadCubeMap(texture, faces) {
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
@@ -734,15 +706,14 @@ function loadCubeMap(texture, faces) {
     gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
     for (var i = 0; i < faces.length; i++) {
-        var face = faces[i][1];
         var image = new Image();
-        image.onload = function(texture, face, image) {
+        image.onload = function(texture, i, image) {
             return function() {
                 gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
-                gl.texImage2D(face, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+                gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
             }
-        } (texture, face, image);
-        image.src = faces[i][0];
+        } (texture, i, image);
+        image.src = faces[i];
     }
 }
 
@@ -825,12 +796,7 @@ function initTextures() {
         windTextures[i].image.src = windTexturesDirs[i];
     }
 
-    var skyboxFaces = [["assets/posx.png", gl.TEXTURE_CUBE_MAP_POSITIVE_X],
-                       ["assets/negx.png", gl.TEXTURE_CUBE_MAP_NEGATIVE_X],
-                       ["assets/posy.png", gl.TEXTURE_CUBE_MAP_POSITIVE_Y],
-                       ["assets/negy.png", gl.TEXTURE_CUBE_MAP_NEGATIVE_Y],
-                       ["assets/posz.png", gl.TEXTURE_CUBE_MAP_POSITIVE_Z],
-                       ["assets/negz.png", gl.TEXTURE_CUBE_MAP_NEGATIVE_Z]];
+    var skyboxFaces = ["assets/posx.png", "assets/negx.png", "assets/posy.png", "assets/negy.png", "assets/posz.png", "assets/negz.png"];
     skyboxTexture = gl.createTexture();
     loadCubeMap(skyboxTexture, skyboxFaces);
 
@@ -951,53 +917,6 @@ function initBuffers() {
     }
     
     initSphere();
-}
-
-var sphereVertexPositionBuffer;
-var sphereIndicesBuffer;
-
-function initSphere() {
-    var latitudeBands = 30;
-    var longitudeBands = 30;
-
-    var vertexPositionData = [];
-
-    for (var latNumber = 0; latNumber <= latitudeBands; latNumber++) {
-        var theta = latNumber * Math.PI / latitudeBands;
-        var sinTheta = Math.sin(theta);
-        var cosTheta = Math.cos(theta);
-        for (var longNumber = 0; longNumber <= longitudeBands; longNumber++) {
-            var phi = longNumber * 2 * Math.PI / longitudeBands;
-            var sinPhi = Math.sin(phi);
-            var cosPhi = Math.cos(phi);
-            var x = cosPhi * sinTheta;
-            var y = cosTheta;
-            var z = sinPhi * sinTheta;
-
-            vertexPositionData.push(sphereRadius * x, sphereRadius * y, sphereRadius * z, x, y, z);
-        }
-    }
-
-    var indexData = [];
-    for (var latNumber = 0; latNumber < latitudeBands; latNumber++) {
-        for (var longNumber = 0; longNumber < longitudeBands; longNumber++) {
-            var first = (latNumber * (longitudeBands + 1)) + longNumber;
-            var second = first + longitudeBands + 1;
-            indexData.push(first, second, first + 1, second, second + 1, first + 1);
-        }
-    }
-
-    sphereVertexPositionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, sphereVertexPositionBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexPositionData), gl.STATIC_DRAW);
-    sphereVertexPositionBuffer.itemSize = 6;
-    sphereVertexPositionBuffer.numItems = vertexPositionData.length / 6;
-
-    sphereIndicesBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sphereIndicesBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indexData), gl.STATIC_DRAW);
-    sphereIndicesBuffer.itemSize = 1;
-    sphereIndicesBuffer.numItems = indexData.length;    
 }
 
 /**
@@ -1180,7 +1099,7 @@ function countFlowerClusterBuffers(flowerType) {
 }
 
 /**
-    Terrain variables
+    Initializes terrain bump map texture and terrain vertices buffers
 */
 var terrainVertex = [];
 var terrainTextureCoords = [];
@@ -1195,9 +1114,6 @@ var terrainTextureMultipler = 10;
 var terrainTexture;
 var terrainData;
 
-/**
-    Initializes terrain bump map texture and terrain vertices buffers
-*/
 function initTerrain() {
     terrainTexture = gl.createTexture();
     terrainTexture.image = new Image();
@@ -1256,14 +1172,11 @@ function initTerrain() {
 }
 
 /**
-    Trees buffers variables
+    Initializes tree buffers with data from proper arrays
 */
 var treeVertexPositionBuffer = [];
 var treeIndicesBuffer = [];
 
-/**
-    Initializes tree buffers with data from proper arrays
-*/
 function initTree() {
     for (var i = 0; i < 6; i++) {
         treeVertexPositionBuffer[i] = gl.createBuffer();
@@ -1281,14 +1194,60 @@ function initTree() {
 }
 
 /**
-    Rain arrays variables
+    Initializes sphere buffers with calculated data
 */
-var rainVertices = [];
-var rainAlphas = [];
+var sphereVertexPositionBuffer;
+var sphereIndicesBuffer;
+
+function initSphere() {
+    var latitudeBands = sphereQuality;
+    var longitudeBands = sphereQuality;
+
+    var vertexPositionData = [];
+    for (var latNumber = 0; latNumber <= latitudeBands; latNumber++) {
+        var theta = latNumber * Math.PI / latitudeBands;
+        var sinTheta = Math.sin(theta);
+        var cosTheta = Math.cos(theta);
+        for (var longNumber = 0; longNumber <= longitudeBands; longNumber++) {
+            var phi = longNumber * 2 * Math.PI / longitudeBands;
+            var sinPhi = Math.sin(phi);
+            var cosPhi = Math.cos(phi);
+            var x = cosPhi * sinTheta;
+            var y = cosTheta;
+            var z = sinPhi * sinTheta;
+
+            vertexPositionData.push(sphereRadius * x, sphereRadius * y, sphereRadius * z, x, y, z);
+        }
+    }
+
+    var indexData = [];
+    for (var latNumber = 0; latNumber < latitudeBands; latNumber++) {
+        for (var longNumber = 0; longNumber < longitudeBands; longNumber++) {
+            var first = (latNumber * (longitudeBands + 1)) + longNumber;
+            var second = first + longitudeBands + 1;
+            indexData.push(first, second, first + 1, second, second + 1, first + 1);
+        }
+    }
+
+    sphereVertexPositionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, sphereVertexPositionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexPositionData), gl.STATIC_DRAW);
+    sphereVertexPositionBuffer.itemSize = 6;
+    sphereVertexPositionBuffer.numItems = vertexPositionData.length / 6;
+
+    sphereIndicesBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sphereIndicesBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indexData), gl.STATIC_DRAW);
+    sphereIndicesBuffer.itemSize = 1;
+    sphereIndicesBuffer.numItems = indexData.length;    
+}
 
 /**
     Initializes rain arrays 
 */
+var rainVertices = [];
+var rainAlphas = [];
+
 function initRain() {
     seed = 1;
     for (var i = 0; i < rainDensity; i++) {
