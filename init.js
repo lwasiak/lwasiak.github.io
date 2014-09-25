@@ -1203,7 +1203,7 @@ function initSphere() {
     var latitudeBands = sphereQuality;
     var longitudeBands = sphereQuality;
 
-    var vertexPositionData = [];
+    var sphereVertices = [];
     for (var latNumber = 0; latNumber <= latitudeBands; latNumber++) {
         var theta = latNumber * Math.PI / latitudeBands;
         var sinTheta = Math.sin(theta);
@@ -1216,30 +1216,30 @@ function initSphere() {
             var y = cosTheta;
             var z = sinPhi * sinTheta;
 
-            vertexPositionData.push(sphereRadius * x, sphereRadius * y, sphereRadius * z, x, y, z);
+            sphereVertices.push(sphereRadius * x, sphereRadius * y, sphereRadius * z, x, y, z);
         }
     }
 
-    var indexData = [];
+    var sphereIncides = [];
     for (var latNumber = 0; latNumber < latitudeBands; latNumber++) {
         for (var longNumber = 0; longNumber < longitudeBands; longNumber++) {
             var first = (latNumber * (longitudeBands + 1)) + longNumber;
             var second = first + longitudeBands + 1;
-            indexData.push(first, second, first + 1, second, second + 1, first + 1);
+            sphereIncides.push(first, second, first + 1, second, second + 1, first + 1);
         }
     }
 
     sphereVertexPositionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, sphereVertexPositionBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexPositionData), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(sphereVertices), gl.STATIC_DRAW);
     sphereVertexPositionBuffer.itemSize = 6;
-    sphereVertexPositionBuffer.numItems = vertexPositionData.length / 6;
+    sphereVertexPositionBuffer.numItems = sphereVertices.length / 6;
 
     sphereIndicesBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sphereIndicesBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indexData), gl.STATIC_DRAW);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(sphereIncides), gl.STATIC_DRAW);
     sphereIndicesBuffer.itemSize = 1;
-    sphereIndicesBuffer.numItems = indexData.length;    
+    sphereIndicesBuffer.numItems = sphereIncides.length;    
 }
 
 /**

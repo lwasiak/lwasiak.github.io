@@ -700,28 +700,28 @@ body {
 
     uniform vec3 uCameraPosition;           /**< Eye camera position */
 
-    varying vec3 vTextureCoord;
+    varying vec3 vReflectRay;
+    varying vec3 vRefractRayR;
+    varying vec3 vRefractRayG;
+    varying vec3 vRefractRayB;
 
-    const vec3 v3 = vec3(0.5, 0.5, 0.5);
-    
+    varying float vRatio;
+
     void main(void) {
         vec4 position = uMVMatrix * vec4(aVertexPosition, 1.0);
         gl_Position = uPMatrix * uCamMatrix * position;
 
-        vec3 avpos = aVertexPosition * v3 + v3;
+        vec3 transformedNormal = uNMatrix * aVertexNormal;
 
-        /**
-            Calculate incident ray
-        */
-        vec3 incidentRay = normalize(position.xyz - uCameraPosition);
-        /**
-            Count normals after translating the sphere
-        */
-        vec3 vTransformedNormal = uNMatrix * aVertexNormal;
-        /**
-            Calculate reflected ray
-        */
-        vTextureCoord = reflect(incidentRay, normalize(vTransformedNormal));
+        vec3 I = normalize(position.xyz - uCameraPosition);
+        vec3 N = normalize(transformedNormal);
+
+        vRatio = 1.0 - dot(-I, N);
+
+        vReflectRay = reflect(I, N);
+        vRefractRayR = refract(I, N, 0.655);
+        vRefractRayG = refract(I, N, 0.67);
+        vRefractRayB = refract(I, N, 0.685);
     }
 </script>
 
@@ -733,13 +733,21 @@ body {
 
     uniform samplerCube uSampler;                       /**< Cube texture to apply on the sphere */
 
-    varying vec3 vTextureCoord;
-
-    const vec3 sphereColor = vec3(0.1, 0.1, 0.1);
+    varying vec3 vReflectRay;
+    varying vec3 vRefractRayR;
+    varying vec3 vRefractRayG;
+    varying vec3 vRefractRayB;
+    varying float vRatio;
 
     void main(void) {
-        vec4 texture = textureCube(uSampler, vTextureCoord);
-        gl_FragColor = mix(texture, vec4(sphereColor, 1.0), 0.3);
+        vec4 reflectTexture = textureCube(uSampler, vReflectRay);
+
+        vec4 refractedColor = vec4(1.0);
+        refractedColor.r = textureCube(uSampler, vRefractRayR).r;
+        refractedColor.g = textureCube(uSampler, vRefractRayG).g;
+        refractedColor.b = textureCube(uSampler, vRefractRayB).b;
+
+        gl_FragColor = mix(refractedColor, reflectTexture, vRatio);
     }
 </script>
 
@@ -1478,11 +1486,13 @@ body {
                 +n+t+ "Batch blue flowers: "        + batchFlower[1]
                 +n+t+ "Blue flowers density: "      + flowerDensity[1]
                 +n+t+ "Number of trees: "      + numberOfTrees
+                +n+t+ "Render sphere: "      + sphere
 				+n+t+ "Wind: "                 + wind
                 +n+t+ "Rain: "                 + rain
                 +n+t+t+ "Rain density: "     + rainDensity
                 +n+t+ "Render skybox: "      + skybox
                 +n+t+ "Use radial blur: "    + radialBlur
+                +n+t+ "Use motion blur: "    + motionBlur
                 +n+t+ "Use depth of field: " + depthOfField
                 +n+t+t+ "Depth of field settings:"
                 +n+t+t+t+ "Near: "   + dofSettings[0]

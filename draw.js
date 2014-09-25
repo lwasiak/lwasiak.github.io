@@ -30,7 +30,7 @@ var treeXPos = [45.0, 20.0, 80.0, 30.0, 40.0, 90.0];
 var treeZPos = [-30.0, -60.0, -60.0, -90.0, -95.0, -10.0];
 var treeBendFactor = [10.0, 10.0, 10.0, 10.0, 10.0, 10.0];
 
-var wind = false;
+var wind = true;
 
 var rain = false;
 var rainDensity = 10000;
@@ -38,14 +38,14 @@ var rainDropsWidth = 3.0;
 var grayed = 0.0;
 var skybox = true;
 
-var radialBlur = false;
+var radialBlur = true;
 
 var motionBlur = false;
 
 var sphere = true;
 var sphereQuality = 30;
-var sphereTextureSize = 512;
-var spherePosition = [64.0, 30.0, -64.0]
+var sphereTextureSize = 2048;
+var spherePosition = [32.0, 15.0, -64.0]
 var sphereRadius = 5.0;
 
 var depthOfField = false;
@@ -53,10 +53,10 @@ var DOFQuality = 0.5;
 var dofSettings = [0.1, 0.3, 0.5];
 
 var shadows = false;
-var softShadows = false;
+var softShadows = true;
 var shadowMapQuality = 0.5;
 
-var lighting = false;
+var lighting = true;
 var lightLocation = [10.0, 30.0, 20.0];
 var pointLightColor = [0.8, 0.8, 0.8];
 var ambientColor = [0.4, 0.4, 0.4];
@@ -422,6 +422,9 @@ function drawScene() {
     drawGround('c');
     drawGrass('c');
     drawTree('c');
+    if (skybox) {
+        drawSkybox('c');
+    }
     if (sphere) {
         drawEnvMap();
         /**
@@ -432,9 +435,6 @@ function drawScene() {
         gl.viewport(0, 0, screenWidth, screenHeight);
 
         drawSphere('c');
-    }
-    if (skybox) {
-        drawSkybox('c');
     }
     if (rain) {
         drawRain('c');
@@ -894,12 +894,12 @@ function drawRain(drawType) {
 /**
     Draws cube environment map for reflective sphere
 */
-var envMapCameraSettings = [[ 180,  270],
-                            [ 180,   90],
-                            [ -90,    0],
-                            [  90,    0],
-                            [ 180,    0],
-                            [ 180,  180]];
+var envMapCameraSettings = [[ 180, 270],
+                            [ 180,  90],
+                            [ -90,   0],
+                            [  90,   0],
+                            [ 180,   0],
+                            [ 180, 180]];
 
 function drawEnvMap() {
     gl.bindFramebuffer(gl.FRAMEBUFFER, environmentFramebuffer);
@@ -932,6 +932,9 @@ function drawEnvMap() {
     @param drawType     'c' - normal color scene
 */
 function drawSphere(drawType) {
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
     gl.useProgram(shaderSphereProgram);
 
     switch (drawType) {
@@ -970,9 +973,10 @@ function drawSphere(drawType) {
 
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
-
     gl.disableVertexAttribArray(shaderSphereProgram.vertexPositionAttribute);
     gl.disableVertexAttribArray(shaderSphereProgram.vertexNormalAttribute);
+
+    gl.disable(gl.BLEND);
 }
 
 var currentCopyTexture = 0;
