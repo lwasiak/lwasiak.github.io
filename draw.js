@@ -45,7 +45,7 @@ var motionBlur = false;
 var sphere = true;
 var sphereQuality = 30;
 var sphereTextureSize = 512;
-var spherePosition = [32.0, 15.0, -64.0]
+var spherePosition = [25.0, 14.0, -64.0]
 var sphereRadius = 5.0;
 
 var depthOfField = false;
