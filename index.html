@@ -688,7 +688,7 @@ body {
 
 <script id="vertGlass" type="x-shader/x-vertex">
 /**
-    Vertex shader used to glass objects
+    Vertex shader used to draw glass objects
 */
     attribute vec3 aVertexPosition;
     attribute vec3 aVertexNormal;
@@ -730,14 +730,14 @@ body {
         */
         vReflectRay = reflect(incident, normal);
         vRefractRay[0] = refract(incident, normal, 0.645);
-        vRefractRay[1] = refract(incident, normal, 0.66);       // Ratio of indices of refraction (air (1.0) to glass (aprox. 1.51))
+        vRefractRay[1] = refract(incident, normal, 0.66);       /**< Ratio of indices of refraction (air (1.0) to glass (aprox. 1.51)) */
         vRefractRay[2] = refract(incident, normal, 0.675);
     }
 </script>
 
 <script id="fragGlass" type="x-shader/x-fragment">
 /**
-    Fragment shader used to glass objects
+    Fragment shader used to draw glass objects
 */
     precision mediump float;
 
