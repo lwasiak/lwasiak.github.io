@@ -686,9 +686,9 @@ body {
 
 <!-- ____________________________________________________________ -->
 
-<script id="vertSphere" type="x-shader/x-vertex">
+<script id="vertGlass" type="x-shader/x-vertex">
 /**
-    Vertex shader used to draw reflective sphere
+    Vertex shader used to glass objects
 */
     attribute vec3 aVertexPosition;
     attribute vec3 aVertexNormal;
@@ -700,52 +700,60 @@ body {
 
     uniform vec3 uCameraPosition;           /**< Eye camera position */
 
-    varying vec3 vReflectRay;
-    varying vec3 vRefractRayR;
-    varying vec3 vRefractRayG;
-    varying vec3 vRefractRayB;
-
-    varying float vRatio;
+    varying vec3 vReflectRay;               /**< Reflected ray */
+    varying mat3 vRefractRay;               /**< 3 refracted rays (red, green and blue) */
+    varying float vRatio;                   /**< Fresnel ratio */
 
     void main(void) {
         vec4 position = uMVMatrix * vec4(aVertexPosition, 1.0);
         gl_Position = uPMatrix * uCamMatrix * position;
-
+        
+        /**
+            Count normal vector in space
+        */
         vec3 transformedNormal = uNMatrix * aVertexNormal;
+        /**
+            Count incident ray
+        */
+        vec3 incident = normalize(position.xyz - uCameraPosition);
+        /**
+            Normalize normal vector
+        */
+        vec3 normal = normalize(transformedNormal);
+        /**
+            Schlick's approximation of fresnel equation
+        */
+        vRatio = 1.0 - dot(-incident, normal);
 
-        vec3 I = normalize(position.xyz - uCameraPosition);
-        vec3 N = normalize(transformedNormal);
-
-        vRatio = 1.0 - dot(-I, N);
-
-        vReflectRay = reflect(I, N);
-        vRefractRayR = refract(I, N, 0.655);
-        vRefractRayG = refract(I, N, 0.67);
-        vRefractRayB = refract(I, N, 0.685);
+        /**
+            Count reflected ray and red, green and blue refracted ray
+        */
+        vReflectRay = reflect(incident, normal);
+        vRefractRay[0] = refract(incident, normal, 0.645);
+        vRefractRay[1] = refract(incident, normal, 0.66);       // Ratio of indices of refraction (air (1.0) to glass (aprox. 1.51))
+        vRefractRay[2] = refract(incident, normal, 0.675);
     }
 </script>
 
-<script id="fragSphere" type="x-shader/x-fragment">
+<script id="fragGlass" type="x-shader/x-fragment">
 /**
-    Fragment shader used to draw reflective sphere
+    Fragment shader used to glass objects
 */
     precision mediump float;
 
-    uniform samplerCube uSampler;                       /**< Cube texture to apply on the sphere */
+    uniform samplerCube uSampler;       /**< Cube texture to apply on the glass */
 
-    varying vec3 vReflectRay;
-    varying vec3 vRefractRayR;
-    varying vec3 vRefractRayG;
-    varying vec3 vRefractRayB;
-    varying float vRatio;
+    varying vec3 vReflectRay;           /**< Reflected ray */
+    varying mat3 vRefractRay;           /**< 3 refracted rays (red, green and blue) */
+    varying float vRatio;               /**< Fresnel ratio */
 
     void main(void) {
         vec4 reflectTexture = textureCube(uSampler, vReflectRay);
 
         vec4 refractedColor = vec4(1.0);
-        refractedColor.r = textureCube(uSampler, vRefractRayR).r;
-        refractedColor.g = textureCube(uSampler, vRefractRayG).g;
-        refractedColor.b = textureCube(uSampler, vRefractRayB).b;
+        refractedColor.r = textureCube(uSampler, vRefractRay[0]).r;
+        refractedColor.g = textureCube(uSampler, vRefractRay[1]).g;
+        refractedColor.b = textureCube(uSampler, vRefractRay[2]).b;
 
         gl_FragColor = mix(refractedColor, reflectTexture, vRatio);
     }
@@ -1625,6 +1633,7 @@ body {
     <input type="checkbox" id="sphere" onchange="cbSphere(this)" checked /> Sphere<br />
     <table style="border: 0; padding: 10px;">
         <tr>
+            <td>Position:
             <td>X: <input type="text" id="sphereX" value="64.0" onchange="tbSphereX(this)" />
             <td>Y: <input type="text" id="sphereY" value="40.0" onchange="tbSphereY(this)" />
             <td>Z: <input type="text" id="sphereZ" value="-64.0" onchange="tbSphereZ(this)" />
@@ -1651,9 +1660,9 @@ body {
     <br />
     <input type="checkbox" id="depthOfField" onchange="cbDepthOfField(this)" checked /> Use Depth of Field<br />
 
-    <h2>Depth of Field:</h2>
     <table style="border: 0; padding: 10px;">
         <tr>
+            <td>DoF settings:
             <td>Near: <input type="text" id="near" value="0.1" onchange="tbDOFN(this)" />
             <td>Middle: <input type="text" id="middle" value="0.3" onchange="tbDOFM(this)" />
             <td>Far: <input type="text" id="far" value="0.5" onchange="tbDOFF(this)" />
@@ -1666,26 +1675,24 @@ body {
     <br />
     <input type="checkbox" id="lighting" onchange="cbLighting(this)" checked /> Use lighting<br />
 
-    <h2>Point light:</h2>
     <table style="border: 0; padding: 10px;">
         <tr>
-            <td><b>Location:</b>
+            <td>Point light location:
             <td>X: <input type="text" id="lightLocationX" value="10.0" onchange="tbLightLocationX(this)" />
             <td>Y: <input type="text" id="lightLocationY" value="30.0" onchange="tbLightLocationY(this)" />
             <td>Z: <input type="text" id="lightLocationZ" value="20.0" onchange="tbLightLocationZ(this)" />
         </tr>
         <tr>
-            <td><b>Color:</b>
+            <td>Point light color:
             <td>R: <input type="text" id="lightR" value="0.8" onchange="tbLightR(this)" />
             <td>G: <input type="text" id="lightG" value="0.8" onchange="tbLightG(this)" />
             <td>B: <input type="text" id="lightB" value="0.8" onchange="tbLightB(this)" />
         </tr>
     </table>
 
-    <h2>Ambient light:</h2>
     <table style="border: 0; padding: 10px;">
         <tr>
-            <td><b>Color:</b>
+            <td>Ambient light color:
             <td>R: <input type="text" id="ambientR" value="0.4" onchange="tbAmbientR(this)" />
             <td>G: <input type="text" id="ambientG" value="0.4" onchange="tbAmbientG(this)" />
             <td>B: <input type="text" id="ambientB" value="0.4" onchange="tbAmbientB(this)" />

@@ -44,7 +44,7 @@ var motionBlur = false;
 
 var sphere = true;
 var sphereQuality = 30;
-var sphereTextureSize = 512;
+var sphereTextureSize = 2048;
 var spherePosition = [32.0, 15.0, -64.0]
 var sphereRadius = 5.0;
 
@@ -890,7 +890,6 @@ function drawRain(drawType) {
     gl.disable(gl.BLEND);
 }
 
-
 /**
     Draws cube environment map for reflective sphere
 */
@@ -927,37 +926,34 @@ function drawEnvMap() {
 }
 
 /**
-    Draws sphere in color
+    Draws glass sphere in color
 
     @param drawType     'c' - normal color scene
 */
 function drawSphere(drawType) {
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-
-    gl.useProgram(shaderSphereProgram);
+    gl.useProgram(shaderGlassProgram);
 
     switch (drawType) {
         case 'c':
-            gl.uniformMatrix4fv(shaderSphereProgram.pMatrixUniform, false, pSceneMatrix);
-            gl.uniformMatrix4fv(shaderSphereProgram.camMatrixUniform, false, camSceneMatrix);
+            gl.uniformMatrix4fv(shaderGlassProgram.pMatrixUniform, false, pSceneMatrix);
+            gl.uniformMatrix4fv(shaderGlassProgram.camMatrixUniform, false, camSceneMatrix);
             break;
         default:
             return;
     }
 
-    gl.uniform3f(shaderSphereProgram.cameraPositionUniform, camXPos, camYPos, camZPos);
+    gl.uniform3f(shaderGlassProgram.cameraPositionUniform, camXPos, camYPos, camZPos);
     
-    gl.enableVertexAttribArray(shaderSphereProgram.vertexPositionAttribute);
-    gl.enableVertexAttribArray(shaderSphereProgram.vertexNormalAttribute);
+    gl.enableVertexAttribArray(shaderGlassProgram.vertexPositionAttribute);
+    gl.enableVertexAttribArray(shaderGlassProgram.vertexNormalAttribute);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, sphereVertexPositionBuffer);
-    gl.vertexAttribPointer(shaderSphereProgram.vertexPositionAttribute, 3, gl.FLOAT, gl.FALSE, 6 * 4, 0);
-    gl.vertexAttribPointer(shaderSphereProgram.vertexNormalAttribute, 3, gl.FLOAT, gl.FALSE, 6 * 4, 3 * 4);
+    gl.vertexAttribPointer(shaderGlassProgram.vertexPositionAttribute, 3, gl.FLOAT, gl.FALSE, 6 * 4, 0);
+    gl.vertexAttribPointer(shaderGlassProgram.vertexNormalAttribute, 3, gl.FLOAT, gl.FALSE, 6 * 4, 3 * 4);
 
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, environmentTexture);
-    gl.uniform1i(shaderSphereProgram.samplerUniform, 0);
+    gl.uniform1i(shaderGlassProgram.samplerUniform, 0);
 
     mat4.identity(mvSceneMatrix);
     mat4.translate(mvSceneMatrix, mvSceneMatrix, spherePosition);
@@ -965,18 +961,16 @@ function drawSphere(drawType) {
     var normalMatrix = mat3.create();
     mat3.normalFromMat4(normalMatrix, mvSceneMatrix);
 
-    gl.uniformMatrix4fv(shaderSphereProgram.mvMatrixUniform, false, mvSceneMatrix);
-    gl.uniformMatrix3fv(shaderSphereProgram.nMatrixUniform, false, normalMatrix);
+    gl.uniformMatrix4fv(shaderGlassProgram.mvMatrixUniform, false, mvSceneMatrix);
+    gl.uniformMatrix3fv(shaderGlassProgram.nMatrixUniform, false, normalMatrix);
     
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sphereIndicesBuffer);
     gl.drawElements(gl.TRIANGLES, sphereIndicesBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
-    gl.disableVertexAttribArray(shaderSphereProgram.vertexPositionAttribute);
-    gl.disableVertexAttribArray(shaderSphereProgram.vertexNormalAttribute);
-
-    gl.disable(gl.BLEND);
+    gl.disableVertexAttribArray(shaderGlassProgram.vertexPositionAttribute);
+    gl.disableVertexAttribArray(shaderGlassProgram.vertexNormalAttribute);
 }
 
 var currentCopyTexture = 0;

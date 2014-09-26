@@ -61,7 +61,7 @@ var shaderGroundProgram;
 var shaderTreeProgram;
 var shaderSkyboxProgram;
 var shaderRainProgram;
-var shaderSphereProgram;
+var shaderGlassProgram;
 var shaderShadowProgram;
 var shaderDofProgram;
 var shaderHorizontalBlurDOFProgram;
@@ -322,29 +322,29 @@ function initShaders() {
 
 //----------------------------------------------------
 
-    vertexShader = getShader("vertSphere");
-    fragmentShader = getShader("fragSphere");
+    vertexShader = getShader("vertGlass");
+    fragmentShader = getShader("fragGlass");
 
-    shaderSphereProgram = gl.createProgram();
-    gl.attachShader(shaderSphereProgram, vertexShader);
-    gl.attachShader(shaderSphereProgram, fragmentShader);
-    gl.linkProgram(shaderSphereProgram);
+    shaderGlassProgram = gl.createProgram();
+    gl.attachShader(shaderGlassProgram, vertexShader);
+    gl.attachShader(shaderGlassProgram, fragmentShader);
+    gl.linkProgram(shaderGlassProgram);
 
-    if (!gl.getProgramParameter(shaderSphereProgram, gl.LINK_STATUS)) {
-        alert("Sphere: Could not initialise shaders");
+    if (!gl.getProgramParameter(shaderGlassProgram, gl.LINK_STATUS)) {
+        alert("Glass: Could not initialise shaders");
     }
 
-    gl.useProgram(shaderSphereProgram);
+    gl.useProgram(shaderGlassProgram);
 
-    shaderSphereProgram.vertexPositionAttribute = gl.getAttribLocation(shaderSphereProgram, "aVertexPosition");
-    shaderSphereProgram.vertexNormalAttribute = gl.getAttribLocation(shaderSphereProgram, "aVertexNormal");
+    shaderGlassProgram.vertexPositionAttribute = gl.getAttribLocation(shaderGlassProgram, "aVertexPosition");
+    shaderGlassProgram.vertexNormalAttribute = gl.getAttribLocation(shaderGlassProgram, "aVertexNormal");
 
-    shaderSphereProgram.pMatrixUniform = gl.getUniformLocation(shaderSphereProgram, "uPMatrix");
-    shaderSphereProgram.mvMatrixUniform = gl.getUniformLocation(shaderSphereProgram, "uMVMatrix");
-    shaderSphereProgram.camMatrixUniform = gl.getUniformLocation(shaderSphereProgram, "uCamMatrix");
-    shaderSphereProgram.nMatrixUniform = gl.getUniformLocation(shaderSphereProgram, "uNMatrix");
-    shaderSphereProgram.cameraPositionUniform = gl.getUniformLocation(shaderSphereProgram, "uCameraPosition");
-    shaderSphereProgram.samplerUniform = gl.getUniformLocation(shaderSphereProgram, "uSampler");
+    shaderGlassProgram.pMatrixUniform = gl.getUniformLocation(shaderGlassProgram, "uPMatrix");
+    shaderGlassProgram.mvMatrixUniform = gl.getUniformLocation(shaderGlassProgram, "uMVMatrix");
+    shaderGlassProgram.camMatrixUniform = gl.getUniformLocation(shaderGlassProgram, "uCamMatrix");
+    shaderGlassProgram.nMatrixUniform = gl.getUniformLocation(shaderGlassProgram, "uNMatrix");
+    shaderGlassProgram.cameraPositionUniform = gl.getUniformLocation(shaderGlassProgram, "uCameraPosition");
+    shaderGlassProgram.samplerUniform = gl.getUniformLocation(shaderGlassProgram, "uSampler");
 
     gl.deleteShader(vertexShader);
     gl.deleteShader(fragmentShader);
