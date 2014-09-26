@@ -18,7 +18,7 @@ var terrainHeight = 20.0;
 
 var batchGrass = true;
 var grassBendFactor = 0.75;
-var grassDensity = 2.5;
+var grassDensity = 5.5;
 
 var batchFlower  = [true, true];
 var flowerBendFactor = [0.5, 0.4];
@@ -38,13 +38,13 @@ var rainDropsWidth = 3.0;
 var grayed = 0.0;
 var skybox = true;
 
-var radialBlur = true;
+var radialBlur = false;
 
 var motionBlur = false;
 
 var sphere = true;
 var sphereQuality = 30;
-var sphereTextureSize = 2048;
+var sphereTextureSize = 512;
 var spherePosition = [32.0, 15.0, -64.0]
 var sphereRadius = 5.0;
 
